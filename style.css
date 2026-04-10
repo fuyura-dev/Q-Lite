@@ -1,0 +1,142 @@
+:root {
+  color-scheme: light;
+  --bg: #f4efe6;
+  --panel: #fffaf2;
+  --panel-border: #d8ccb8;
+  --text: #2d2418;
+  --muted: #756651;
+  --accent: #8c5e34;
+  --accent-strong: #6d441f;
+  --shadow: rgba(45, 36, 24, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Georgia, "Times New Roman", serif;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.7), transparent 35%),
+    linear-gradient(180deg, #efe6d8 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+button,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px var(--shadow);
+  padding: 24px;
+}
+
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+select,
+button {
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffaf2;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-strong);
+}
+
+.status-bar {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7f0e4;
+  color: var(--text);
+}
+
+.status-bar p {
+  margin: 0;
+}
+
+.board-frame {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+canvas {
+  width: min(100%, 720px);
+  height: auto;
+  display: block;
+  background: #fbf7ef;
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+}
+
+@media (max-width: 780px) {
+  .panel {
+    padding: 18px;
+  }
+
+  .panel__header {
+    flex-direction: column;
+  }
+
+  .controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
