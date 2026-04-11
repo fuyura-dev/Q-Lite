@@ -12,6 +12,7 @@
     {
       "name": "wasm",
       "displayName": "WASM build",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wasm",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
