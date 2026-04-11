@@ -47,6 +47,6 @@ console.log(engine.test())
 
 ```
 cmake --preset standalone
-cmake --build --preset standalone
+cmake --build --preset standalone-release
 ctest --preset test-all
 ```
