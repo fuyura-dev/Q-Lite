@@ -30,13 +30,33 @@
           <p id="status-text">Loading...</p>
         </div>
 
-        <div class="board-frame">
-          <canvas
-            id="game-canvas"
-            width="720"
-            height="720"
-            aria-label="Quoridor game board"
-          ></canvas>
+        <div class="game-layout">
+          <div class="board-frame">
+            <canvas
+              id="game-canvas"
+              width="720"
+              height="720"
+              aria-label="Quoridor game board"
+            ></canvas>
+          </div>
+
+          <div class="game-info">
+            <h2 class="game-info__title">Game Info</h2>
+            <div class="info-card">
+              <p class="info-card__label">Current Turn</p>
+              <p class="info-card__value" id="info-current-turn">Player 1</p>
+            </div>
+
+            <div class="info-card">
+              <p class="info-card__label">Player 1 Walls</p>
+              <p class="info-card__value" id="info-player-one-walls">8</p>
+            </div>
+
+            <div class="info-card">
+              <p class="info-card__label">Player 2 Walls</p>
+              <p class="info-card__value" id="info-player-two-walls">8</p>
+            </div>
+          </div>
         </div>
       </section>
     </main>

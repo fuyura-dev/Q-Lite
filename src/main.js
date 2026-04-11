@@ -2,6 +2,9 @@ const canvas = document.getElementById("game-canvas");
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
 const modeSelect = document.getElementById("mode-select");
+const infoCurrentTurn = document.getElementById("info-current-turn");
+const infoPlayerOneWalls = document.getElementById("info-player-one-walls");
+const infoPlayerTwoWalls = document.getElementById("info-player-two-walls");
 
 const context = canvas.getContext("2d");
 
@@ -18,16 +21,16 @@ const WALL_THICKNESS = 12;
 function createMockSnapshot() {
   return {
     boardSize: GRID_SIZE,
-    currentTurn: 1,
+    currentTurn: 2,
     winner: null,
     players: [
       {
         id: 1,
         row: GRID_SIZE - 1,
         col: Math.floor(GRID_SIZE / 2),
-        wallsRemaining: 8,
+        wallsRemaining: 2,
       },
-      { id: 2, row: 0, col: Math.floor(GRID_SIZE / 2), wallsRemaining: 8 },
+      { id: 2, row: 0, col: Math.floor(GRID_SIZE / 2), wallsRemaining: 3 },
     ],
     horizontalWalls: [{ row: 1, col: 2 }],
     verticalWalls: [{ row: 2, col: 4 }],
@@ -158,17 +161,22 @@ function render(snapshot) {
   drawWalls(snapshot);
 }
 
-function updateStatus() {
+function updateStatus(snapshot) {
   const modeLabel =
     modeSelect.value === "human-vs-ai" ? "Human vs AI" : "Human vs Human";
+  const playerOne = snapshot.players[0];
+  const playerTwo = snapshot.players[1];
 
   statusText.textContent = `Board ready. Current setup: ${modeLabel}`;
+  infoCurrentTurn.textContent = `Player ${snapshot.currentTurn}`;
+  infoPlayerOneWalls.textContent = `${playerOne.wallsRemaining}`;
+  infoPlayerTwoWalls.textContent = `${playerTwo.wallsRemaining}`;
 }
 
 function refresh() {
   const snapshot = getDisplayState();
   render(snapshot);
-  updateStatus();
+  updateStatus(snapshot);
 }
 
 modeSelect?.addEventListener("change", () => {

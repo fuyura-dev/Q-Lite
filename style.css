@@ -117,6 +117,54 @@ button:hover {
   justify-content: center;
 }
 
+.game-layout {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 720px) 260px;
+  gap: 20px;
+  align-items: start;
+}
+
+.game-info {
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background: #f9f3e8;
+}
+
+.game-info__title {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  color: var(--accent-strong);
+}
+
+.info-card {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fffaf2;
+  border: 1px solid rgba(140, 94, 52, 0.14);
+}
+
+.info-card + .info-card {
+  margin-top: 10px;
+}
+
+.info-card__label,
+.info-card__value {
+  margin: 0;
+}
+
+.info-card__label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.info-card__value {
+  margin-top: 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 canvas {
   width: min(100%, 720px);
   height: auto;
@@ -138,5 +186,8 @@ canvas {
   .controls {
     width: 100%;
     justify-content: flex-start;
+  }
+  .game-layout {
+    grid-template-columns: 1fr;
   }
 }
