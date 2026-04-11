@@ -15,16 +15,30 @@
       "binaryDir": "${sourceDir}/build/wasm",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING":  "FALSE",
+        "BUILD_TESTING": "FALSE",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
       }
     }
   ],
+  "buildPresets": [
+    {
+      "name": "standalone-release",
+      "displayName": "Standalone",
+      "configurePreset": "standalone",
+      "configuration": "Release"
+    },
+    {
+      "name": "wasm",
+      "displayName": "WASM build",
+      "configurePreset": "wasm",
+      "configuration": "Release"
+    }
+  ],
   "testPresets": [
-      {
-        "name": "test-all",
-        "displayName": "Test All",
-        "configurePreset": "standalone",
-      }
+    {
+      "name": "test-all",
+      "displayName": "Test All",
+      "configurePreset": "standalone"
+    }
   ]
 }
