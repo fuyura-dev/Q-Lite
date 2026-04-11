@@ -14,10 +14,10 @@
       "displayName": "WASM build",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/wasm",
+      "toolchainFile": "${sourceDir}/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "FALSE",
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+        "BUILD_TESTING": "FALSE"
       }
     }
   ],
