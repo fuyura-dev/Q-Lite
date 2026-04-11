@@ -11,10 +11,10 @@ enum MoveResult : uint8_t {
 
 class Position {
 public:
-	MoveResult movePawn(GridPosition pos);
-	MoveResult placeWall(GridPosition pos, CellSide side);
+	MoveResult MovePawn(GridPosition pos);
+	MoveResult PlaceWall(GridPosition pos, WallSide side);
 
-	bool hasWall(GridPosition pos, CellSide side) const;
+	bool HasWall(GridPosition pos, WallSide side) const;
 
 private:
 	Color currentTurn = kWhite;

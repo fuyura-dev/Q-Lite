@@ -1,0 +1,3 @@
+[submodule "ai/emsdk"]
+	path = ai/emsdk
+	url = git@github.com:emscripten-core/emsdk.git

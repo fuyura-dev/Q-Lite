@@ -7,7 +7,8 @@ constexpr auto kTotalCells = kGridSize * kGridSize;
 constexpr auto kWallsPerPlayer = 8;
 
 struct GridPosition {
-	uint8_t row, col;
+	int8_t row, col;
+	bool operator==(const GridPosition&) const = default;
 	uint8_t compress() const {
 		return row * kGridSize + col;
 	}
@@ -18,7 +19,7 @@ enum Color : bool {
 	kBlack
 };
 
-enum CellSide : bool {
+enum WallSide : bool {
 	kRightSide,
 	kBottomSide
 };
