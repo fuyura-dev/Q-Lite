@@ -6,6 +6,9 @@ const infoCurrentTurn = document.getElementById("info-current-turn");
 const infoPlayerOneWalls = document.getElementById("info-player-one-walls");
 const infoPlayerTwoWalls = document.getElementById("info-player-two-walls");
 
+// TEMP
+const devInfoText = document.getElementById("dev-info-text");
+
 const context = canvas.getContext("2d");
 
 if (!context) {
@@ -17,6 +20,7 @@ const BOARD_MARGIN = 72;
 const CELL_SIZE = (canvas.width - BOARD_MARGIN * 2) / GRID_SIZE;
 const PAWN_RADIUS = CELL_SIZE * 0.24;
 const WALL_THICKNESS = 12;
+let selectedCell = null;
 
 function createMockSnapshot() {
   return {
@@ -150,6 +154,19 @@ function drawWalls(snapshot) {
   });
 }
 
+function drawSelectedCell() {
+  if (!selectedCell) {
+    return;
+  }
+
+  const x = BOARD_MARGIN + selectedCell.col * CELL_SIZE;
+  const y = BOARD_MARGIN + selectedCell.row * CELL_SIZE;
+
+  context.strokeStyle = "#8c5e34";
+  context.lineWidth = 3;
+  context.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+}
+
 function render(snapshot) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
@@ -159,6 +176,7 @@ function render(snapshot) {
   drawFrame();
   drawPawns(snapshot);
   drawWalls(snapshot);
+  drawSelectedCell();
 }
 
 function updateStatus(snapshot) {
@@ -171,6 +189,12 @@ function updateStatus(snapshot) {
   infoCurrentTurn.textContent = `Player ${snapshot.currentTurn}`;
   infoPlayerOneWalls.textContent = `${playerOne.wallsRemaining}`;
   infoPlayerTwoWalls.textContent = `${playerTwo.wallsRemaining}`;
+
+  const selectedText = selectedCell
+    ? `Selected cell: row ${selectedCell.row}, col ${selectedCell.col}`
+    : "blank";
+  const devText = selectedText;
+  devInfoText.textContent = devText;
 }
 
 function refresh() {
@@ -179,11 +203,40 @@ function refresh() {
   updateStatus(snapshot);
 }
 
+function getBoardCellFromEvent(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const canvasX = (event.clientX - rect.left) * scaleX;
+  const canvasY = (event.clientY - rect.top) * scaleY;
+  const boardStart = BOARD_MARGIN;
+  const boardEnd = boardStart + CELL_SIZE * GRID_SIZE;
+
+  if (
+    canvasX < boardStart ||
+    canvasX >= boardEnd ||
+    canvasY < boardStart ||
+    canvasY >= boardEnd
+  ) {
+    return null;
+  }
+
+  return {
+    row: Math.floor((canvasY - boardStart) / CELL_SIZE),
+    col: Math.floor((canvasX - boardStart) / CELL_SIZE),
+  };
+}
+
 modeSelect?.addEventListener("change", () => {
   refresh();
 });
 
 restartButton?.addEventListener("click", () => {
+  refresh();
+});
+
+canvas?.addEventListener("click", (event) => {
+  selectedCell = getBoardCellFromEvent(event);
   refresh();
 });
 

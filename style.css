@@ -125,6 +125,11 @@ button:hover {
   align-items: start;
 }
 
+.side-panel {
+  display: grid;
+  gap: 12px;
+}
+
 .game-info {
   padding: 18px;
   border: 1px solid var(--panel-border);
@@ -190,4 +195,18 @@ canvas {
   .game-layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* TEMPS */
+.dev-info {
+  padding: 12px 14px;
+  border: 1px dashed var(--panel-border);
+  border-radius: 12px;
+  background: #fcf8f1;
+  color: var(--muted);
+}
+
+.dev-info p {
+  margin: 0;
+  font-size: 0.9rem;
 }
