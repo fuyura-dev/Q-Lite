@@ -9,26 +9,33 @@ if (!context) {
   throw new Error("Could not get a 2d drawing context");
 }
 
-const BOARD_SIZE = 7;
+const GRID_SIZE = 7;
 const BOARD_MARGIN = 72;
-const CELL_SIZE = (canvas.width - BOARD_MARGIN * 2) / BOARD_SIZE;
+const CELL_SIZE = (canvas.width - BOARD_MARGIN * 2) / GRID_SIZE;
 const PAWN_RADIUS = CELL_SIZE * 0.24;
+const WALL_THICKNESS = 12;
 
 function createMockSnapshot() {
   return {
-    boardSize: BOARD_SIZE,
+    boardSize: GRID_SIZE,
     currentTurn: 1,
     winner: null,
     players: [
-      { id: 1, row: 0, col: 3, wallsRemaining: 8 },
-      { id: 2, row: 0, col: 3, wallsRemaining: 8 },
+      {
+        id: 1,
+        row: GRID_SIZE - 1,
+        col: Math.floor(GRID_SIZE / 2),
+        wallsRemaining: 8,
+      },
+      { id: 2, row: 0, col: Math.floor(GRID_SIZE / 2), wallsRemaining: 8 },
     ],
-    horizontalWalls: [],
-    verticalWalls: [],
+    horizontalWalls: [{ row: 1, col: 2 }],
+    verticalWalls: [{ row: 2, col: 4 }],
   };
 }
 
 function getDisplayState() {
+  // TODO
   let gameSnapshot = createMockSnapshot();
   return gameSnapshot;
 }
@@ -37,7 +44,7 @@ function drawGrid() {
   context.strokeStyle = "#b29268";
   context.lineWidth = 2;
 
-  for (let i = 0; i <= BOARD_SIZE; i++) {
+  for (let i = 0; i <= GRID_SIZE; i++) {
     const position = BOARD_MARGIN + i * CELL_SIZE;
 
     context.beginPath();
@@ -58,8 +65,8 @@ function drawBackground() {
 }
 
 function drawCells() {
-  for (let i = 0; i < BOARD_SIZE; i++) {
-    for (let j = 0; j < BOARD_SIZE; j++) {
+  for (let i = 0; i < GRID_SIZE; i++) {
+    for (let j = 0; j < GRID_SIZE; j++) {
       const x = BOARD_MARGIN + j * CELL_SIZE;
       const y = BOARD_MARGIN + i * CELL_SIZE;
       const isLight = (i + j) % 2 === 0;
@@ -75,13 +82,13 @@ function drawGoalRows() {
   context.fillRect(
     BOARD_MARGIN,
     BOARD_MARGIN,
-    CELL_SIZE * BOARD_SIZE,
+    CELL_SIZE * GRID_SIZE,
     CELL_SIZE,
   );
   context.fillRect(
     BOARD_MARGIN,
-    BOARD_MARGIN + CELL_SIZE * (BOARD_SIZE - 1),
-    CELL_SIZE * BOARD_SIZE,
+    BOARD_MARGIN + CELL_SIZE * (GRID_SIZE - 1),
+    CELL_SIZE * GRID_SIZE,
     CELL_SIZE,
   );
 }
@@ -92,9 +99,52 @@ function drawFrame() {
   context.strokeRect(
     BOARD_MARGIN,
     BOARD_MARGIN,
-    CELL_SIZE * BOARD_SIZE,
-    CELL_SIZE * BOARD_SIZE,
+    CELL_SIZE * GRID_SIZE,
+    CELL_SIZE * GRID_SIZE,
   );
+}
+
+function getCellCenter(row, col) {
+  return {
+    x: BOARD_MARGIN + col * CELL_SIZE + CELL_SIZE / 2,
+    y: BOARD_MARGIN + row * CELL_SIZE + CELL_SIZE / 2,
+  };
+}
+
+function drawPawns(snapshot) {
+  const pawnColors = {
+    1: { fill: "#8c5e34", stroke: "#5e3b18" },
+    2: { fill: "#2f4858", stroke: "#1b2d37" },
+  };
+
+  snapshot.players.forEach((player) => {
+    const { x, y } = getCellCenter(player.row, player.col);
+    const colors = pawnColors[player.id];
+
+    context.beginPath();
+    context.fillStyle = colors.fill;
+    context.strokeStyle = colors.stroke;
+    context.lineWidth = 4;
+    context.arc(x, y, PAWN_RADIUS, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+  });
+}
+
+function drawWalls(snapshot) {
+  context.fillStyle = "#6f4a2d";
+
+  snapshot.horizontalWalls.forEach((wall) => {
+    const x = BOARD_MARGIN + wall.col * CELL_SIZE;
+    const y = BOARD_MARGIN + (wall.row + 1) * CELL_SIZE - WALL_THICKNESS / 2;
+    context.fillRect(x, y, CELL_SIZE * 2, WALL_THICKNESS);
+  });
+
+  snapshot.verticalWalls.forEach((wall) => {
+    const x = BOARD_MARGIN + (wall.col + 1) * CELL_SIZE - WALL_THICKNESS / 2;
+    const y = BOARD_MARGIN + wall.row * CELL_SIZE;
+    context.fillRect(x, y, WALL_THICKNESS, CELL_SIZE * 2);
+  });
 }
 
 function render(snapshot) {
@@ -104,6 +154,8 @@ function render(snapshot) {
   drawGrid();
   drawGoalRows();
   drawFrame();
+  drawPawns(snapshot);
+  drawWalls(snapshot);
 }
 
 function updateStatus() {
@@ -113,13 +165,18 @@ function updateStatus() {
   statusText.textContent = `Board ready. Current setup: ${modeLabel}`;
 }
 
-modeSelect?.addEventListener("change", () => {
+function refresh() {
+  const snapshot = getDisplayState();
+  render(snapshot);
   updateStatus();
+}
+
+modeSelect?.addEventListener("change", () => {
+  refresh();
 });
 
 restartButton?.addEventListener("click", () => {
-  render();
+  refresh();
 });
 
-render();
-updateStatus();
+refresh();
