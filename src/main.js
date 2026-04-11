@@ -35,4 +35,20 @@ function drawBoard() {
   }
 }
 
+function updateStatus() {
+  const modeLabel =
+    modeSelect.value === "human-vs-ai" ? "Human vs AI" : "Human vs Human";
+
+  statusText.textContent = `Board ready. Current setup: ${modeLabel}`;
+}
+
+modeSelect?.addEventListener("change", () => {
+  updateStatus();
+});
+
+restartButton?.addEventListener("click", () => {
+  drawBoard();
+});
+
 drawBoard();
+updateStatus();
