@@ -194,13 +194,13 @@ function drawWalls(snapshot) {
   snapshot.horizontalWalls.forEach((wall) => {
     const x = BOARD_MARGIN + wall.col * CELL_SIZE;
     const y = BOARD_MARGIN + (wall.row + 1) * CELL_SIZE - WALL_THICKNESS / 2;
-    context.fillRect(x, y, CELL_SIZE * 2, WALL_THICKNESS);
+    context.fillRect(x, y, CELL_SIZE, WALL_THICKNESS);
   });
 
   snapshot.verticalWalls.forEach((wall) => {
     const x = BOARD_MARGIN + (wall.col + 1) * CELL_SIZE - WALL_THICKNESS / 2;
     const y = BOARD_MARGIN + wall.row * CELL_SIZE;
-    context.fillRect(x, y, WALL_THICKNESS, CELL_SIZE * 2);
+    context.fillRect(x, y, WALL_THICKNESS, CELL_SIZE);
   });
 }
 

@@ -25,7 +25,15 @@ std::vector<GridPosition> Engine::GetHorizontalWalls() const {
 }
 
 std::vector<GridPosition> Engine::GetVerticalWalls() const {
-    return { {3,3} };
+    std::vector<GridPosition> walls;
+	for (int8_t row = 0; row < kGridSize; row++) {
+		for (int8_t col = 0; col < kGridSize; col++) {
+            if (pos.HasWall({ row, col }, kRightSide)) {
+                walls.emplace_back(row, col);
+            }
+		}
+	}
+    return walls;
 }
 
 void Engine::Reset() {
