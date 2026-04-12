@@ -26,12 +26,12 @@ EMSCRIPTEN_BINDINGS(engine) {
 
     register_vector<GridPosition>("VectorGridPos");
 
-    enum_<WallSide>("wallSide")
+    enum_<WallSide>("wallSide", enum_value_type::number)
         .value("RIGHT_SIDE", kRightSide)
         .value("BOTTOM_SIDE", kBottomSide)
         ;
 
-    enum_<MoveResult>("moveResult")
+    enum_<MoveResult>("moveResult", enum_value_type::number)
         .value("INVALID", kInvalid)
         .value("VALID", kValid)
         .value("WIN", kWin)
