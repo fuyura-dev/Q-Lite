@@ -3,6 +3,7 @@ add_library(q-liteengine STATIC ${src})
 target_sources(q-liteengine
 	PRIVATE
 		BFS.cpp
+		Engine.cpp
 		Position.cpp
 
 	PUBLIC

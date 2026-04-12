@@ -1,5 +1,17 @@
 #include "Position.h"
 
+Color Position::GetCurrentTurn() const {
+	return currentTurn;
+}
+
+GridPosition Position::GetPawnPosition(Color player) const {
+	return pawnPositions[player];
+}
+
+uint8_t Position::GetRemainingWalls(Color player) const {
+	return remainingWalls[player];
+}
+
 MoveResult Position::MovePawn(GridPosition pos) {
 	return kValid;
 }

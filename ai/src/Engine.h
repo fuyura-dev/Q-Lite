@@ -4,7 +4,11 @@
 
 class Engine {
 public:
-	int test() { return 10; }
+	int test() const;
+	int GetCurrentTurn() const;
+	int GetPlayerRow(int player) const;
+	int GetPlayerCol(int player) const;
+	int GetRemainingWalls(int player) const;
 private:
 	Position pos;
 };

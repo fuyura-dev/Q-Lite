@@ -14,6 +14,10 @@ public:
 	MoveResult MovePawn(GridPosition pos);
 	MoveResult PlaceWall(GridPosition pos, WallSide side);
 
+	Color GetCurrentTurn() const;
+	GridPosition GetPawnPosition(Color player) const;
+	uint8_t GetRemainingWalls(Color player) const;
+
 	bool HasWall(GridPosition pos, WallSide side) const;
 
 private:

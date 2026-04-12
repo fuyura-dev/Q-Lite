@@ -1,3 +1,5 @@
+import qlite from "./wasm/wasmbuild.js";
+
 const canvas = document.getElementById("game-canvas");
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
@@ -21,6 +23,8 @@ const CELL_SIZE = (canvas.width - BOARD_MARGIN * 2) / GRID_SIZE;
 const PAWN_RADIUS = CELL_SIZE * 0.24;
 const WALL_THICKNESS = 12;
 let selectedCell = null;
+let engine = null;
+let engineStatus = "Loading Engine...";
 
 function createMockSnapshot() {
   return {
@@ -41,10 +45,46 @@ function createMockSnapshot() {
   };
 }
 
+// Still temporaray
+function createEngineSnapshot() {
+  return {
+    boardSize: GRID_SIZE,
+    currentTurn: engine.getCurrentTurn(),
+    winner: null,
+    players: [
+      {
+        id: 1,
+        row: engine.getPlayerRow(1),
+        col: engine.getPlayerCol(1),
+        wallsRemaining: engine.getRemainingWalls(1),
+      },
+      {
+        id: 2,
+        row: engine.getPlayerRow(2),
+        col: engine.getPlayerCol(2),
+        wallsRemaining: engine.getRemainingWalls(2),
+      },
+    ],
+    horizontalWalls: [],
+    verticalWalls: [],
+  };
+}
+
 function getDisplayState() {
-  // TODO
-  let gameSnapshot = createMockSnapshot();
-  return gameSnapshot;
+  // TODO: Remove fallback once engine is complete
+  return engine ? createEngineSnapshot() : createMockSnapshot();
+}
+
+async function initializeEngine() {
+  try {
+    const wasmModule = await qlite();
+    engine = new wasmModule.Engine();
+    engineStatus = "Engine Ready";
+  } catch (error) {
+    engineStatus = "Engine not loaded";
+    console.error(error);
+  }
+  refresh();
 }
 
 function drawGrid() {
@@ -194,7 +234,8 @@ function updateStatus(snapshot) {
     ? `Selected cell: row ${selectedCell.row}, col ${selectedCell.col}`
     : "blank";
   const devText = selectedText;
-  devInfoText.textContent = devText;
+  const devEngineStatus = `Engine Status: ${engineStatus}`;
+  devInfoText.innerHTML = `${devText}<br>${devEngineStatus}`;
 }
 
 function refresh() {
@@ -232,6 +273,7 @@ modeSelect?.addEventListener("change", () => {
 });
 
 restartButton?.addEventListener("click", () => {
+  selectedCell = null;
   refresh();
 });
 
@@ -241,3 +283,4 @@ canvas?.addEventListener("click", (event) => {
 });
 
 refresh();
+initializeEngine();
