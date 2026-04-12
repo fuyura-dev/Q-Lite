@@ -45,6 +45,14 @@ function createMockSnapshot() {
   };
 }
 
+function arrayify(vector) {
+  const result = [];
+  for (const v of vector) {
+    result.push(v);
+  }
+  return result;
+}
+
 // Still temporaray
 function createEngineSnapshot() {
   return {
@@ -65,8 +73,8 @@ function createEngineSnapshot() {
         wallsRemaining: engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: [],
-    verticalWalls: [],
+    horizontalWalls: arrayify(engine.getHorizontalWalls()),
+    verticalWalls: arrayify(engine.getVerticalWalls())
   };
 }
 
@@ -79,6 +87,8 @@ async function initializeEngine() {
   try {
     const wasmModule = await qlite();
     engine = new wasmModule.Engine();
+    engine.wallSide = wasmModule.wallSide;
+    engine.moveResult = wasmModule.moveResult;
     engineStatus = "Engine Ready";
   } catch (error) {
     engineStatus = "Engine not loaded";

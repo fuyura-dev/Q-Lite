@@ -21,6 +21,7 @@ public:
 	bool HasWall(GridPosition pos, WallSide side) const;
 
 private:
+	void ChangeTurn(); 
 	Color currentTurn = kWhite;
 	uint8_t remainingWalls[2] = {
 		kWallsPerPlayer, 

@@ -4,10 +4,6 @@ static Color ToColor(int player) {
     return player <= 1 ? kWhite : kBlack;
 }
 
-int Engine::test() const {
-    return 10;
-}
-
 int Engine::GetCurrentTurn() const {
     return static_cast<int>(pos.GetCurrentTurn()) + 1;
 }
@@ -22,4 +18,28 @@ int Engine::GetPlayerCol(int player) const {
 
 int Engine::GetRemainingWalls(int player) const {
     return pos.GetRemainingWalls(ToColor(player));
+}
+
+std::vector<GridPosition> Engine::GetHorizontalWalls() const {
+    return { {0, 1} };
+}
+
+std::vector<GridPosition> Engine::GetVerticalWalls() const {
+    return { {3,3} };
+}
+
+void Engine::Reset() {
+    pos = Position();
+}
+
+MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
+    return pos.PlaceWall({ row, col }, side);
+}
+
+MoveResult Engine::MovePawn(int8_t row, int8_t col) {
+    return pos.MovePawn({ row, col });
+}
+
+MoveResult Engine::DoBestMove() {
+    return kValid;
 }

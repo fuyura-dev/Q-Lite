@@ -48,9 +48,14 @@ MoveResult Position::PlaceWall(GridPosition pos, WallSide side) {
 	}
 
 	walls[side] |= new_wall_mask;
+	ChangeTurn();
 	return kValid;
 }
 
 bool Position::HasWall(GridPosition pos, WallSide side) const {
 	return (walls[side] & (1 << pos.compress())) != 0;
+}
+
+void Position::ChangeTurn() {
+	currentTurn = currentTurn == kWhite ? kBlack : kWhite;
 }
