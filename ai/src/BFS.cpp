@@ -32,10 +32,6 @@ bool InBounds(GridPosition pos) {
 	return 0 <= std::min(pos.row, pos.col) && std::max(pos.row, pos.col) < kGridSize;
 }
 
-GridPosition operator+(GridPosition ths, GridPosition that) {
-	return { static_cast<int8_t>(ths.row + that.row), static_cast<int8_t>(ths.col + that.col) };
-}
-
 bool HasWall(const Position& pos, GridPosition wall_pos, const CellSideVector& cell_side_vector) {
 	auto [side, vector] = cell_side_vector;
 	WallSide wall_side = ToWallSide(side);

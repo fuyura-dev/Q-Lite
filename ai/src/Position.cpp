@@ -28,40 +28,40 @@ MoveResult Position::PlaceWall(GridPosition pos, WallSide side) {
 		return kInvalid;
 	}
 
-	uint64_t new_wall_mask = 0;
-
-	if (side == kBottomSide) {
-		if (pos.col == kGridSize - 1) {
-			return kInvalid; // the other side of the wall exceeds boundary
-		}
-		if (pos.row == kGridSize - 1) {
-			return kInvalid; // useless move
-		}
-		uint8_t compressed_pos = pos.compress();
-		new_wall_mask = 0b11LL << compressed_pos;
-	} else {
-		if (pos.row == kGridSize - 1) {
-			return kInvalid;
-		}
-		if (pos.col == kGridSize - 1) {
-			return kInvalid;
-		}
-		uint8_t compressed_pos = pos.compress();
-		new_wall_mask = (1LL | (1LL << kGridSize)) << compressed_pos;
+	if (pos.col == kGridSize - 1) {
+		return kInvalid;
+	}
+	if (pos.row == kGridSize - 1) {
+		return kInvalid;
 	}
 
-	if ((walls[side] & new_wall_mask) != 0) {
-		return kInvalid; // wall overlap
+	if (HasWall(pos, side)) {
+		return kInvalid;
 	}
+	uint64_t mask = 1LL << pos.compress();
 
-	walls[side] |= new_wall_mask;
+	WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
+	if (walls[other_side] & mask) {
+		return kInvalid; // intersecting wall    -- -|- --
+	}
+	walls[side] |= mask;
 	remainingWalls[currentTurn]--;
 	ChangeTurn();
 	return kValid;
 }
 
 bool Position::HasWall(GridPosition pos, WallSide side) const {
-	return (walls[side] & (1LL << pos.compress())) != 0;
+	uint64_t wall_mask = 1LL << pos.compress();
+	if (side == kBottomSide) {
+		if (pos.col > 0) {
+			wall_mask |= 1LL << (pos + GridPosition{ 0, -1 }).compress();
+		}
+	} else {
+		if (pos.row > 0) {
+			wall_mask |= 1LL << (pos + GridPosition{ -1, 0 }).compress();
+		}
+	}
+	return (walls[side] & wall_mask) != 0;
 }
 
 void Position::ChangeTurn() {

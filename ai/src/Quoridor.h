@@ -9,10 +9,15 @@ constexpr auto kWallsPerPlayer = 8;
 struct GridPosition {
 	int8_t row, col;
 	bool operator==(const GridPosition&) const = default;
+	GridPosition operator+(GridPosition that) const {
+		return { static_cast<int8_t>(row + that.row), static_cast<int8_t>(col + that.col) };
+	}
 	uint8_t compress() const {
 		return row * kGridSize + col;
 	}
 };
+
+
 
 enum Color : bool {
 	kWhite,
