@@ -12,6 +12,13 @@ uint8_t Position::GetRemainingWalls(Color player) const {
 	return remainingWalls[player];
 }
 
+MoveResult Position::DoMove(Move move) {
+	if (move.kind == MoveKind::kMovePawn) {
+		return MovePawn(move.pos);
+	}
+	return PlaceWall(move.pos, *move.side);
+}
+
 MoveResult Position::MovePawn(GridPosition pos) {
 	return kValid;
 }

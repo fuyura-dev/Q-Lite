@@ -5,7 +5,8 @@ target_sources(q-liteengine
 		BFS.cpp
 		Engine.cpp
 		Position.cpp
-
+		Search.cpp
+		TransTable.cpp
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -13,6 +14,8 @@ target_sources(q-liteengine
 		Engine.h
 		Position.h
 		Quoridor.h
+		Search.h
+		TransTable.h
 )
 
 if (EMSCRIPTEN)

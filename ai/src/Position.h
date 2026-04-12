@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include "Quoridor.h"
 
 enum MoveResult : uint8_t {
@@ -9,8 +10,20 @@ enum MoveResult : uint8_t {
 	kWin
 };
 
+enum class MoveKind : uint8_t {
+	kMovePawn,
+	kPlaceWall
+};
+
+struct Move {
+	MoveKind kind;
+	GridPosition pos;
+	std::optional<WallSide> side;
+};
+
 class Position {
 public:
+	MoveResult DoMove(Move move);
 	MoveResult MovePawn(GridPosition pos);
 	MoveResult PlaceWall(GridPosition pos, WallSide side);
 
@@ -21,17 +34,17 @@ public:
 	bool HasWall(GridPosition pos, WallSide side) const;
 
 private:
-	void ChangeTurn(); 
+	void ChangeTurn();
 	Color currentTurn = kWhite;
 	uint8_t remainingWalls[2] = {
-		kWallsPerPlayer, 
+		kWallsPerPlayer,
 		kWallsPerPlayer
 	};
-	uint64_t walls[2] = {0};
 	GridPosition pawnPositions[2] = {
-		kStartPositions[kWhite], 
+		kStartPositions[kWhite],
 		kStartPositions[kBlack]
 	};
+	uint64_t walls[2] = {0};
 };
 
 // each bit in the walls array represents whether a wall exists for a cell.
