@@ -26,10 +26,13 @@ public:
 	uint8_t GetRemainingWalls(Color player) const;
 
 	bool HasWall(GridPosition pos, WallSide side) const;
-	bool CanPlaceWall(GridPosition pos, WallSide side) const;
+	bool CanPlaceWall(GridPosition pos, WallSide side);
 
 private:
 	void ChangeTurn();
+	bool IsAnyPawnPathBlocked() const;
+	bool IsPawnPathBlocked(Color color) const;
+
 	Color currentTurn = kWhite;
 	uint8_t remainingWalls[2] = {
 		kWallsPerPlayer,

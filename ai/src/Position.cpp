@@ -1,4 +1,5 @@
 #include "Position.h"
+#include "BFS.h"
 
 Color Position::GetCurrentTurn() const {
 	return currentTurn;
@@ -49,7 +50,22 @@ bool Position::HasWall(GridPosition pos, WallSide side) const {
 	return (walls[side] & wall_mask) != 0;
 }
 
-bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
+struct TemporaryWall {
+	TemporaryWall(uint64_t& wall, uint64_t mask, uint8_t& remainingWalls) :
+		wall(wall), mask(mask), remainingWalls(remainingWalls) {
+		remainingWalls--;
+		wall ^= mask;
+	}
+	~TemporaryWall() {
+		remainingWalls++;
+		wall ^= mask;
+	}
+	uint64_t& wall;
+	uint64_t mask;
+	uint8_t& remainingWalls;
+};
+
+bool Position::CanPlaceWall(GridPosition pos, WallSide side) {
 	if (remainingWalls[currentTurn] == 0) {
 		return false;
 	}
@@ -62,10 +78,13 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	if (HasWall(pos, side)) {
 		return false;
 	}
-
 	uint64_t mask = 1LL << pos.compress();
 	WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
 	if (walls[other_side] & mask) {
+		return false;
+	}
+	TemporaryWall tw(walls[side], mask, remainingWalls[side]);
+	if (IsAnyPawnPathBlocked()) {
 		return false;
 	}
 	return true;
@@ -73,4 +92,20 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 
 void Position::ChangeTurn() {
 	currentTurn = currentTurn == kWhite ? kBlack : kWhite;
+}
+
+constexpr auto kMinimumWallsToBlock = kGridSize / 2 + 2;
+
+bool Position::IsAnyPawnPathBlocked() const {
+	uint8_t used_walls = kWallsPerPlayer * 2 - remainingWalls[kWhite] - remainingWalls[kBlack];
+	if (used_walls < kMinimumWallsToBlock) {
+		return false;
+	}
+	return IsPawnPathBlocked(kWhite) || IsPawnPathBlocked(kBlack);
+}
+
+bool Position::IsPawnPathBlocked(Color color) const {
+	return BFS(pawnPositions[color], [&](GridPosition current_pos) {
+		return current_pos.row == kTargetRow[color];
+	}, *this);
 }
