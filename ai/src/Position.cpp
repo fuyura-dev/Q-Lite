@@ -1,8 +1,5 @@
 #include "Position.h"
 
-#include <algorithm>
-#include "MoveGen.h"
-
 Color Position::GetCurrentTurn() const {
 	return currentTurn;
 }
@@ -15,51 +12,27 @@ uint8_t Position::GetRemainingWalls(Color player) const {
 	return remainingWalls[player];
 }
 
-MoveResult Position::DoMove(Move move) {
+bool Position::DoMove(Move move) {
 	if (move.kind == MoveKind::kMovePawn) {
 		return MovePawn(move.pos);
 	}
-	return PlaceWall(move.pos, *move.side);
+	PlaceWall(move.pos, *move.side);
+	return false;
 }
 
-MoveResult Position::MovePawn(GridPosition pos) {
-	auto moves = GenCurrentPawnMoves(*this);
-	if (std::ranges::find(moves, pos) == moves.end()) {
-		return kInvalid;
-	}
+bool Position::MovePawn(GridPosition pos) {
 	pawnPositions[currentTurn] = pos;
 	if (pos.row == kTargetRow[currentTurn]) {
-		return kWin;
+		return true;
 	}
 	ChangeTurn();
-	return kValid;
+	return false;
 }
 
-MoveResult Position::PlaceWall(GridPosition pos, WallSide side) {
-	if (remainingWalls[currentTurn] == 0) {
-		return kInvalid;
-	}
-
-	if (pos.col == kGridSize - 1) {
-		return kInvalid;
-	}
-	if (pos.row == kGridSize - 1) {
-		return kInvalid;
-	}
-
-	if (HasWall(pos, side)) {
-		return kInvalid;
-	}
-	uint64_t mask = 1LL << pos.compress();
-
-	WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
-	if (walls[other_side] & mask) {
-		return kInvalid; // intersecting wall    -- -|- --
-	}
-	walls[side] |= mask;
+void Position::PlaceWall(GridPosition pos, WallSide side) {
+	walls[side] |= 1LL << pos.compress();
 	remainingWalls[currentTurn]--;
 	ChangeTurn();
-	return kValid;
 }
 
 bool Position::HasWall(GridPosition pos, WallSide side) const {
@@ -74,6 +47,28 @@ bool Position::HasWall(GridPosition pos, WallSide side) const {
 		}
 	}
 	return (walls[side] & wall_mask) != 0;
+}
+
+bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
+	if (remainingWalls[currentTurn] == 0) {
+		return false;
+	}
+	if (pos.col == kGridSize - 1) {
+		return false;
+	}
+	if (pos.row == kGridSize - 1) {
+		return false;
+	}
+	if (HasWall(pos, side)) {
+		return false;
+	}
+
+	uint64_t mask = 1LL << pos.compress();
+	WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
+	if (walls[other_side] & mask) {
+		return false;
+	}
+	return true;
 }
 
 void Position::ChangeTurn() {

@@ -4,12 +4,6 @@
 #include <optional>
 #include "Quoridor.h"
 
-enum MoveResult : uint8_t {
-	kInvalid,
-	kValid,
-	kWin
-};
-
 enum class MoveKind : uint8_t {
 	kMovePawn,
 	kPlaceWall
@@ -23,15 +17,16 @@ struct Move {
 
 class Position {
 public:
-	MoveResult DoMove(Move move);
-	MoveResult MovePawn(GridPosition pos);
-	MoveResult PlaceWall(GridPosition pos, WallSide side);
+	bool DoMove(Move move);
+	bool MovePawn(GridPosition pos);
+	void PlaceWall(GridPosition pos, WallSide side);
 
 	Color GetCurrentTurn() const;
 	GridPosition GetPawnPosition(Color player) const;
 	uint8_t GetRemainingWalls(Color player) const;
 
 	bool HasWall(GridPosition pos, WallSide side) const;
+	bool CanPlaceWall(GridPosition pos, WallSide side) const;
 
 private:
 	void ChangeTurn();

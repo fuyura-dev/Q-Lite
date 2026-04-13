@@ -43,3 +43,13 @@ TEST_F(EngineTest, VerticalWalls) {
 	EXPECT_EQ(walls[3].row, 3);
 	EXPECT_EQ(walls[3].col, 0);
 }
+
+TEST_F(EngineTest, IntersectingWall) {
+	ASSERT_EQ(engine.PlaceWall(0, 0, kRightSide), kValid);
+	EXPECT_EQ(engine.PlaceWall(0, 0, kBottomSide), kInvalid);
+}
+
+TEST_F(EngineTest, OverlapWall) {
+	ASSERT_EQ(engine.PlaceWall(0, 0, kRightSide), kValid);
+	EXPECT_EQ(engine.PlaceWall(0, 0, kRightSide), kInvalid);
+}

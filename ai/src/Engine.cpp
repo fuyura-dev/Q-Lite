@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "MoveGen.h"
 
 static Color ToColor(int player) {
     return player <= 1 ? kWhite : kBlack;
@@ -41,11 +42,20 @@ void Engine::Reset() {
 }
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
-    return pos.PlaceWall({ row, col }, side);
+    if (pos.CanPlaceWall({ row, col }, side)) {
+        pos.PlaceWall({ row, col }, side);
+        return kValid;
+    }
+    return kInvalid;
+
 }
 
 MoveResult Engine::MovePawn(int8_t row, int8_t col) {
-    return pos.MovePawn({ row, col });
+    auto moves = GenCurrentPawnMoves(pos);
+    if (std::ranges::find(moves, GridPosition{ row, col }) == moves.end()) {
+        return kInvalid;
+    }
+    return pos.MovePawn({ row, col }) ? kWin : kValid;
 }
 
 MoveResult Engine::DoBestMove() {

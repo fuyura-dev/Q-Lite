@@ -3,6 +3,12 @@
 #include <vector>
 #include "Position.h"
 
+enum MoveResult : uint8_t {
+	kInvalid,
+	kValid,
+	kWin
+};
+
 class Engine {
 public:
 	int GetCurrentTurn() const;
