@@ -34,8 +34,7 @@ constexpr GridPosition kStartPositions[2] = {
 	{.row = 0, .col = kGridSize / 2}
 };
 
-constexpr uint8_t kTargetRow[2] = {
+constexpr int8_t kTargetRow[2] = {
 	0,
 	kGridSize - 1
 };
-

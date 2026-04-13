@@ -1,5 +1,8 @@
 #include "Position.h"
 
+#include <algorithm>
+#include "MoveGen.h"
+
 Color Position::GetCurrentTurn() const {
 	return currentTurn;
 }
@@ -20,6 +23,15 @@ MoveResult Position::DoMove(Move move) {
 }
 
 MoveResult Position::MovePawn(GridPosition pos) {
+	auto moves = GenCurrentPawnMoves(*this);
+	if (std::ranges::find(moves, pos) == moves.end()) {
+		return kInvalid;
+	}
+	pawnPositions[currentTurn] = pos;
+	if (pos.row == kTargetRow[currentTurn]) {
+		return kWin;
+	}
+	ChangeTurn();
 	return kValid;
 }
 

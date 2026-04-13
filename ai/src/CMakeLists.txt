@@ -4,6 +4,7 @@ target_sources(q-liteengine
 	PRIVATE
 		BFS.cpp
 		Engine.cpp
+		MoveGen.cpp
 		Position.cpp
 		Search.cpp
 		TransTable.cpp
@@ -12,6 +13,7 @@ target_sources(q-liteengine
 	FILES
 		BFS.h
 		Engine.h
+		MoveGen.h
 		Position.h
 		Quoridor.h
 		Search.h
