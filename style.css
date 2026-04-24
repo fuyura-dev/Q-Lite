@@ -117,6 +117,14 @@ button:hover {
   justify-content: center;
 }
 
+.board-viewport {
+  width: min(100%, 720px);
+  aspect-ratio: 1 / 1;
+  background: gray;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
 .game-layout {
   margin-top: 20px;
   display: grid;
@@ -168,15 +176,6 @@ button:hover {
   margin-top: 4px;
   font-size: 1.1rem;
   font-weight: 700;
-}
-
-canvas {
-  width: min(100%, 720px);
-  height: auto;
-  display: block;
-  background: #fbf7ef;
-  border: 1px solid var(--panel-border);
-  border-radius: 20px;
 }
 
 @media (max-width: 780px) {
