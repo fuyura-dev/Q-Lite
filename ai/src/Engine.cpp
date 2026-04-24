@@ -22,7 +22,15 @@ int Engine::GetRemainingWalls(int player) const {
 }
 
 std::vector<GridPosition> Engine::GetHorizontalWalls() const {
-    return { {0, 1} };
+    std::vector<GridPosition> walls;
+    for (int8_t row = 0; row < kGridSize; row++) {
+        for (int8_t col = 0; col < kGridSize; col++) {
+            if (pos.HasWall({ row, col }, kBottomSide)) {
+                walls.emplace_back(row, col);
+            }
+        }
+    }
+    return walls;
 }
 
 std::vector<GridPosition> Engine::GetVerticalWalls() const {

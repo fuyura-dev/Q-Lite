@@ -15,6 +15,8 @@ struct Move {
 	std::optional<WallSide> side;
 };
 
+using Score = int;
+
 class Position {
 public:
 	bool DoMove(Move move);
@@ -27,6 +29,8 @@ public:
 
 	bool HasWall(GridPosition pos, WallSide side) const;
 	bool CanPlaceWall(GridPosition pos, WallSide side) const;
+
+	Score Evaluate() const;
 
 private:
 	void ChangeTurn();

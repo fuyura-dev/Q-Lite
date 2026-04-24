@@ -1,4 +1,5 @@
 #include "Position.h"
+#include <limits>
 #include "BFS.h"
 
 Color Position::GetCurrentTurn() const {
@@ -71,6 +72,29 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	Position temp_pos = *this;
 	temp_pos.PlaceWall(pos, side);
 	return !temp_pos.IsAnyPawnPathBlocked();
+}
+
+constexpr auto kWinningScore = std::numeric_limits<Score>::max();
+
+Score Position::Evaluate() const {  // positive  if white is winning
+	if (pawnPositions[kWhite].row == kTargetRow[kWhite]) {
+		return kWinningScore;
+	}
+
+	if (pawnPositions[kBlack].row == kTargetRow[kBlack]) {
+		return -kWinningScore;
+	}
+
+	auto evaluate_for = [&](Color color) -> Score {
+		auto distance = BFS(pawnPositions[color], [&](GridPosition current_pos) {
+			return current_pos.row == kTargetRow[color];
+		}, *this);
+
+		return (kTotalCells - distance) + static_cast<Score>(remainingWalls[color]);
+	};
+
+	return evaluate_for(kWhite) - evaluate_for(kBlack);
+
 }
 
 void Position::ChangeTurn() {
