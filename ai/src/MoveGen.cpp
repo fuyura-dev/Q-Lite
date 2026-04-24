@@ -92,3 +92,39 @@ void PawnMoveList::Iterator::NextJumping() {
 	}
 	done = true;
 }
+
+void AllMoveList::Iterator::Advance() {
+	while (pawn_current != move_list->pawn_moves.end()) {
+		GridPosition grid_pos = *pawn_current;
+		++pawn_current;
+		ret = {
+			.kind = MoveKind::kMovePawn,
+			.pos = grid_pos,
+			.side = std::nullopt
+		};
+		return;
+	}
+	if (move_list->pos.GetRemainingWalls(move_list->pos.GetCurrentTurn()) == 0) {
+		done = true;
+		return;
+	}
+
+	while (wall_current != kTotalCells) {
+		GridPosition grid_pos = GridPosition::from_compressed(wall_current);
+		WallSide side = current_side;
+		current_side = static_cast<WallSide>(!current_side);
+		if (current_side == kRightSide) {
+			wall_current++;
+		}
+
+		if (move_list->pos.CanPlaceWall(grid_pos, side)) {
+			ret = {
+				.kind = MoveKind::kPlaceWall,
+				.pos = grid_pos,
+				.side = side
+			};
+			return;
+		}
+	}
+	done = true;
+}

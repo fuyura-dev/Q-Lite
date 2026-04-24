@@ -109,3 +109,25 @@ private:
 	const PawnMoveList* move_list;
 	AdjacentMoveList::Iterator current;
 };
+
+class AllMoveList : public MoveListCommon<AllMoveList> {
+public:
+	AllMoveList(const Position& pos) : MoveListCommon(pos), pawn_moves(pos) {}
+
+	class Iterator;
+	
+private:
+	PawnMoveList pawn_moves;
+};
+
+class AllMoveList::Iterator : public IteratorCommon<Move, Iterator> {
+public:
+	void Advance();
+	Iterator(const AllMoveList& move_list) : move_list(&move_list), pawn_current(move_list.pawn_moves.begin()) {}
+
+private:
+	const AllMoveList* move_list;
+	PawnMoveList::Iterator pawn_current;
+	int8_t wall_current = 0;
+	WallSide current_side = kRightSide;
+};

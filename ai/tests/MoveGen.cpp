@@ -65,3 +65,9 @@ TEST_F(MoveGenTest, SideJump) {
 	}
 	EXPECT_TRUE(it == moves.end());
 }
+
+TEST_F(MoveGenTest, All) {
+	auto moves = AllMoveList(pos);
+	auto size = std::ranges::distance(moves);
+	EXPECT_EQ(size, 3 + (kGridSize - 1) * (kGridSize - 1) * 2);
+}

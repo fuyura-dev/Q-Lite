@@ -18,6 +18,9 @@ struct GridPosition {
 	uint8_t compress() const {
 		return row * kGridSize + col;
 	}
+	static GridPosition from_compressed(uint8_t v) {
+		return { static_cast<int8_t>(v / kGridSize), static_cast<int8_t>(v % kGridSize) };
+	}
 };
 
 
