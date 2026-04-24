@@ -51,7 +51,7 @@ MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
 }
 
 MoveResult Engine::MovePawn(int8_t row, int8_t col) {
-    auto moves = GenCurrentPawnMoves(pos);
+    auto moves = PawnMoveList(pos);
     if (std::ranges::find(moves, GridPosition{ row, col }) == moves.end()) {
         return kInvalid;
     }

@@ -12,6 +12,9 @@ struct GridPosition {
 	GridPosition operator+(GridPosition that) const {
 		return { static_cast<int8_t>(row + that.row), static_cast<int8_t>(col + that.col) };
 	}
+	GridPosition operator-(GridPosition that) const {
+		return { static_cast<int8_t>(row - that.row), static_cast<int8_t>(col - that.col) };
+	}
 	uint8_t compress() const {
 		return row * kGridSize + col;
 	}

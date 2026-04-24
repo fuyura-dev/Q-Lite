@@ -27,7 +27,6 @@ TEST_F(BFSTest, Blocked) {
 	pos.PlaceWall({ 0, 0 }, kBottomSide);
 	pos.PlaceWall({ 0, 2 }, kBottomSide);
 	pos.PlaceWall({ 0, 4 }, kBottomSide);
-	pos.PlaceWall({ 0, 6 }, kBottomSide);
 	pos.PlaceWall({ 1, 5 }, kRightSide);
 	pos.PlaceWall({ 2, 5 }, kBottomSide);
 	EXPECT_EQ(BFS(kStartPositions[0], kStartPositions[1]), kUnreachable);

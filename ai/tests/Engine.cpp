@@ -53,3 +53,11 @@ TEST_F(EngineTest, OverlapWall) {
 	ASSERT_EQ(engine.PlaceWall(0, 0, kRightSide), kValid);
 	EXPECT_EQ(engine.PlaceWall(0, 0, kRightSide), kInvalid);
 }
+
+TEST_F(EngineTest, Blocked) {
+	ASSERT_EQ(engine.PlaceWall(0, 0, kBottomSide), kValid);
+	ASSERT_EQ(engine.PlaceWall(0, 2, kBottomSide), kValid);
+	ASSERT_EQ(engine.PlaceWall(0, 4, kBottomSide), kValid);
+	ASSERT_EQ(engine.PlaceWall(1, 5, kRightSide), kValid);
+	EXPECT_EQ(engine.PlaceWall(2, 5, kBottomSide), kInvalid);
+}

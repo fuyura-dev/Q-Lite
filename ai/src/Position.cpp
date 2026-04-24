@@ -50,22 +50,7 @@ bool Position::HasWall(GridPosition pos, WallSide side) const {
 	return (walls[side] & wall_mask) != 0;
 }
 
-struct TemporaryWall {
-	TemporaryWall(uint64_t& wall, uint64_t mask, uint8_t& remainingWalls) :
-		wall(wall), mask(mask), remainingWalls(remainingWalls) {
-		remainingWalls--;
-		wall ^= mask;
-	}
-	~TemporaryWall() {
-		remainingWalls++;
-		wall ^= mask;
-	}
-	uint64_t& wall;
-	uint64_t mask;
-	uint8_t& remainingWalls;
-};
-
-bool Position::CanPlaceWall(GridPosition pos, WallSide side) {
+bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	if (remainingWalls[currentTurn] == 0) {
 		return false;
 	}
@@ -83,11 +68,9 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) {
 	if (walls[other_side] & mask) {
 		return false;
 	}
-	TemporaryWall tw(walls[side], mask, remainingWalls[side]);
-	if (IsAnyPawnPathBlocked()) {
-		return false;
-	}
-	return true;
+	Position temp_pos = *this;
+	temp_pos.PlaceWall(pos, side);
+	return !temp_pos.IsAnyPawnPathBlocked();
 }
 
 void Position::ChangeTurn() {
@@ -107,5 +90,5 @@ bool Position::IsAnyPawnPathBlocked() const {
 bool Position::IsPawnPathBlocked(Color color) const {
 	return BFS(pawnPositions[color], [&](GridPosition current_pos) {
 		return current_pos.row == kTargetRow[color];
-	}, *this);
+	}, *this) == kUnreachable;
 }

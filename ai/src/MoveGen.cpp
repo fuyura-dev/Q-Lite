@@ -1,22 +1,8 @@
 #include "MoveGen.h"
 #include <algorithm>
-#include <iterator>
+#include <ranges>
 
-enum class CellSide : uint8_t {
-	kRightSide,
-	kBottomSide,
-	kLeftSide,
-	kTopSide
-};
-
-using CellSideVector = std::pair<CellSide, GridPosition>;
-
-constexpr CellSideVector kAdjacent[4] = {
-	{CellSide::kRightSide, {.row = 0, .col = 1}},
-	{CellSide::kBottomSide, {.row = 1, .col = 0}},
-	{CellSide::kLeftSide, {.row = 0, .col = -1}},
-	{CellSide::kTopSide, {.row = -1, .col = 0}}
-};
+namespace {
 
 WallSide ToWallSide(CellSide side) {
 	if (side == CellSide::kLeftSide || side == CellSide::kRightSide) {
@@ -38,43 +24,71 @@ bool HasWall(const Position& pos, GridPosition wall_pos, const CellSideVector& c
 	return pos.HasWall(wall_pos + vector, wall_side);
 }
 
-std::vector<GridPosition> GenPawnMovesUnrestricted(GridPosition pawn, const Position& pos) {
-	std::vector<GridPosition> moves;
-	for (const auto& cell_side_vector : kAdjacent) {
-		GridPosition new_grid_pos = pawn + cell_side_vector.second;
-		if (!InBounds(new_grid_pos) || HasWall(pos, pawn, cell_side_vector)) {
-			continue;
-		}
-		moves.push_back(new_grid_pos);
-	}
-	return moves;
 }
 
-std::vector<GridPosition> GenCurrentPawnMoves(const Position& pos) {
-	Color color = pos.GetCurrentTurn();
-	GridPosition player = pos.GetPawnPosition(color);
-	GridPosition other = pos.GetPawnPosition(color == kWhite ? kBlack : kWhite);
-	auto moves = GenPawnMovesUnrestricted(player, pos);
-
-	if (const auto it = std::ranges::find(moves, other); it != moves.end()) {
-		moves.erase(it);
-		auto jump_moves = GenPawnMovesUnrestricted(other, pos);
-		std::erase(jump_moves, player);
-		decltype(jump_moves)::iterator jump_over;
-		if (player.row == other.row) {
-			jump_over = std::ranges::find_if(jump_moves, [&](auto m) {
-				return m.row == player.row;
-			});
-		} else {
-			jump_over = std::ranges::find_if(jump_moves, [&](auto m) {
-				return m.col == player.col;
-			});
-		}
-		if (jump_over != jump_moves.end()) {
-			moves.push_back(*jump_over);
-		} else {
-			std::ranges::copy(jump_moves, std::back_inserter(moves));
+void AdjacentMoveList::Iterator::Advance() {
+	while (current_vector != std::end(kAdjacent)) {
+		auto cell_side_vector = *current_vector++;
+		GridPosition new_grid_pos = move_list->grid_pos + cell_side_vector.second;
+		if (InBounds(new_grid_pos) && !HasWall(move_list->pos, move_list->grid_pos, cell_side_vector)) {
+			ret = new_grid_pos;
+			return;
 		}
 	}
-	return moves;
+	done = true;
+}
+
+PawnMoveList::PawnMoveList(const Position& pos) : MoveListCommon(pos),
+	player(pos.GetPawnPosition(pos.GetCurrentTurn())),
+	other(pos.GetPawnPosition(pos.GetCurrentTurn() == kWhite ? kBlack : kWhite)),
+	adjacent(player, pos),
+	jump_moves(other, pos) {
+}
+
+void PawnMoveList::Iterator::Advance() {
+	if (!jumping) {
+		NextAdjacent();
+	} else {
+		NextJumping();
+	}
+}
+
+void PawnMoveList::Iterator::NextAdjacent() {
+	while (current != move_list->adjacent.end()) {
+		GridPosition grid_pos = *current;
+		++current;
+		if (grid_pos != move_list->other) {
+			ret = grid_pos;
+			return;
+		}
+		jumping = true;
+		GridPosition vector = move_list->other - move_list->player;
+		GridPosition jump = move_list->other + vector;
+		if (std::ranges::find(move_list->jump_moves, jump) != move_list->jump_moves.end()) {
+			straight_jump = true;
+		}
+	}
+	if (!jumping) {
+		done = true;
+	} else {
+		current = move_list->jump_moves.begin();
+		NextJumping();
+	}
+}
+
+void PawnMoveList::Iterator::NextJumping() {
+	while (current != move_list->jump_moves.end()) {
+		GridPosition grid_pos = *current;
+		++current;
+		if (grid_pos == move_list->player) {
+			continue;
+		}
+		bool same_row_or_col = grid_pos.row == move_list->player.row || 
+								grid_pos.col == move_list->player.col;
+		if (same_row_or_col == straight_jump) {
+			ret = grid_pos;
+			return;
+		}
+	}
+	done = true;
 }

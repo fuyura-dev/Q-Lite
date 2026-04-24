@@ -26,7 +26,7 @@ public:
 	uint8_t GetRemainingWalls(Color player) const;
 
 	bool HasWall(GridPosition pos, WallSide side) const;
-	bool CanPlaceWall(GridPosition pos, WallSide side);
+	bool CanPlaceWall(GridPosition pos, WallSide side) const;
 
 private:
 	void ChangeTurn();

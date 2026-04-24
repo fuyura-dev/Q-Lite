@@ -36,7 +36,7 @@ int8_t BFS(GridPosition start_pos, Fn done, const Position& pos) {
 			return distance;
 		}
 
-		for (auto move : GenPawnMovesUnrestricted(current_pos, pos)) {
+		for (auto move : AdjacentMoveList(current_pos, pos)) {
 			if (try_visit(move)) {
 				queue.emplace(move, distance + 1);
 			}
