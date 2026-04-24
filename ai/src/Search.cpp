@@ -6,7 +6,7 @@ struct Bounds {
 	Score alpha, beta;
 };
 
-constexpr auto kMaxDepth = 5;
+constexpr auto kMaxDepth = 4;
 constexpr Bounds kInitialBounds = {
 	.alpha = std::numeric_limits<Score>::min(),
 	.beta = std::numeric_limits<Score>::max()
@@ -24,7 +24,7 @@ Score AlphaBetaMax(Position pos, Bounds bounds, Move& best_move, int depth = 0) 
 	for (const auto move : AllMoveList(pos)) {
 		Position tmp_pos = pos;
 		tmp_pos.DoMove(move);
-		Score score = AlphaBetaMin(tmp_pos, bounds, best_move, depth - 1);
+		Score score = AlphaBetaMin(tmp_pos, bounds, best_move, depth + 1);
 		if (bounds.alpha < score) {
 			bounds.alpha = score;
 			if (depth == 0) {
@@ -46,7 +46,7 @@ Score AlphaBetaMin(Position pos, Bounds bounds, Move& best_move, int depth = 0) 
 	for (const auto move : AllMoveList(pos)) {
 		Position tmp_pos = pos;
 		tmp_pos.DoMove(move);
-		Score score = AlphaBetaMax(tmp_pos, bounds, best_move, depth - 1);
+		Score score = AlphaBetaMax(tmp_pos, bounds, best_move, depth + 1);
 		if (score < bounds.beta) {
 			bounds.beta = score;
 			if (depth == 0) {

@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "MoveGen.h"
+#include "Search.h"
 
 static Color ToColor(int player) {
     return player <= 1 ? kWhite : kBlack;
@@ -67,5 +68,7 @@ MoveResult Engine::MovePawn(int8_t row, int8_t col) {
 }
 
 MoveResult Engine::DoBestMove() {
+    Move best_move = DoSearch(pos);
+    pos.DoMove(best_move);
     return kValid;
 }

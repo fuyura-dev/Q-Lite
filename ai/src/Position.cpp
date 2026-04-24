@@ -101,13 +101,7 @@ void Position::ChangeTurn() {
 	currentTurn = currentTurn == kWhite ? kBlack : kWhite;
 }
 
-constexpr auto kMinimumWallsToBlock = kGridSize / 2 + 2;
-
 bool Position::IsAnyPawnPathBlocked() const {
-	uint8_t used_walls = kWallsPerPlayer * 2 - remainingWalls[kWhite] - remainingWalls[kBlack];
-	if (used_walls < kMinimumWallsToBlock) {
-		return false;
-	}
 	return IsPawnPathBlocked(kWhite) || IsPawnPathBlocked(kBlack);
 }
 
