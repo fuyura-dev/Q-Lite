@@ -74,7 +74,7 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	return !temp_pos.IsAnyPawnPathBlocked();
 }
 
-constexpr auto kWinningScore = std::numeric_limits<Score>::max();
+constexpr auto kWinningScore = std::numeric_limits<Score>::max() - 10;
 
 Score Position::Evaluate() const {  // positive  if white is winning
 	if (pawnPositions[kWhite].row == kTargetRow[kWhite]) {
