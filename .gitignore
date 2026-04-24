@@ -1,1 +1,4 @@
 wasmbuild.js
+
+node_modules/
+ai/emsdk
