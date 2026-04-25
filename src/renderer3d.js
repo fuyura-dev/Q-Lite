@@ -19,6 +19,8 @@ const BOARD_MATERIALS = {
   cell: new THREE.MeshStandardMaterial({ color: "#d9bb87" }),
   lane: new THREE.MeshStandardMaterial({ color: "#4b3423" }),
   wall: new THREE.MeshStandardMaterial({ color: "#c89352" }),
+  pawnOne: new THREE.MeshStandardMaterial({ color: "#d6d6d6" }),
+  pawnTwo: new THREE.MeshStandardMaterial({ color: "#5a5a5a" }),
 };
 
 function getCellCenter(index) {
@@ -96,6 +98,29 @@ function createReserveWallMesh() {
   mesh.receiveShadow = true;
 
   return mesh;
+}
+
+function createPawnMesh(playerId) {
+  const pawnGroup = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.3, 0.5, 24),
+    playerId == 1 ? BOARD_MATERIALS.pawnOne : BOARD_MATERIALS.pawnTwo,
+  );
+  body.castShadow = true;
+  body.receiveShadow = true;
+  body.position.y = 0.3;
+  pawnGroup.add(body);
+
+  return pawnGroup;
+}
+
+function getPawnPosition(player) {
+  return {
+    x: getCellCenter(player.col),
+    y: CELL_HEIGHT,
+    z: getCellCenter(player.row),
+  };
 }
 
 function getReserveWallSlots() {
@@ -249,6 +274,8 @@ export function createRenderer3D(container) {
   scene.add(placedWallGroup);
   const reserveWallGroup = new THREE.Group();
   scene.add(reserveWallGroup);
+  const pawnGroup = new THREE.Group();
+  scene.add(pawnGroup);
 
   function resizeRenderer() {
     const width = container.clientWidth;
@@ -280,6 +307,13 @@ export function createRenderer3D(container) {
   function render(snapshot, options = {}) {
     if (!snapshot) {
       return;
+    }
+
+    for (const player of snapshot.players) {
+      const mesh = createPawnMesh(player.id);
+      const position = getPawnPosition(player);
+      mesh.position.set(position.x, position.y, position.z);
+      pawnGroup.add(mesh);
     }
 
     // Placed Walls
