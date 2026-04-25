@@ -30,6 +30,40 @@ function getLaneCenter(index) {
   return getCellCenter(index) + (CELL_SIZE + LANE_SIZE) / 2;
 }
 
+function mergeWallSegments(segments, axis) {
+  const grouped = new Map();
+
+  for (const segment of segments) {
+    const fixed = axis == "horizontal" ? segment.row : segment.col;
+    const variable = axis == "horizontal" ? segment.col : segment.row;
+
+    if (!grouped.has(fixed)) {
+      grouped.set(fixed, []);
+    }
+    grouped.get(fixed).push(variable);
+  }
+
+  const mergedWalls = [];
+
+  for (const [fixed, values] of grouped) {
+    values.sort((a, b) => a - b);
+
+    for (let i = 0; i < values.length; i++) {
+      const current = values[i];
+      const next = values[i + 1];
+
+      mergedWalls.push(
+        axis == "horizontal"
+          ? { row: fixed, col: current }
+          : { row: current, col: fixed },
+      );
+      i++;
+    }
+  }
+
+  return mergedWalls;
+}
+
 function createPlacedWallMesh(axis, wall) {
   const isHorizontal = axis == "horizontal";
   const mesh = new THREE.Mesh(
@@ -193,16 +227,21 @@ export function createRenderer3D(container) {
   animate();
 
   function render(snapshot, options = {}) {
-    // TODO: Render snapshot
+    if (!snapshot) {
+      return;
+    }
 
-    // Result after grouping wall segment
-    const horizontalWalls = [
-      { row: 0, col: 1 },
-      { row: 1, col: 2 },
-    ];
+    const horizontalWalls = mergeWallSegments(
+      snapshot.horizontalWalls,
+      "horizontal",
+    );
+    const verticalWalls = mergeWallSegments(snapshot.verticalWalls, "vertical");
 
     for (const wall of horizontalWalls) {
       wallGroup.add(createPlacedWallMesh("horizontal", wall));
+    }
+    for (const wall of verticalWalls) {
+      wallGroup.add(createPlacedWallMesh("vertical", wall));
     }
   }
 
