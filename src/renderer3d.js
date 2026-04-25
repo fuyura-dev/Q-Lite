@@ -3,10 +3,14 @@ import { OrbitControls } from "three/examples/jsm/Addons.js";
 
 const BOARD_SIZE = 7;
 const CELL_SIZE = 0.9;
+const CELL_HEIGHT = 0.12;
 const LANE_SIZE = 0.2;
 const BOARD_WORLD_SIZE = BOARD_SIZE * CELL_SIZE + (BOARD_SIZE - 1) * LANE_SIZE;
 const HALF_BOARD = BOARD_WORLD_SIZE / 2;
-const BOARD_DEPTH = BOARD_WORLD_SIZE + CELL_SIZE * 4 + LANE_SIZE * 2;
+const WALL_SPAN = CELL_SIZE * 2 + LANE_SIZE;
+const WALL_THICKNESS = LANE_SIZE * 0.8;
+const WALL_HEIGHT = 0.7;
+const BOARD_DEPTH = BOARD_WORLD_SIZE + WALL_SPAN * 2;
 const HALF_DEPTH = BOARD_DEPTH / 2;
 
 const BOARD_MATERIALS = {
@@ -14,11 +18,38 @@ const BOARD_MATERIALS = {
   top: new THREE.MeshStandardMaterial({ color: "#9a7149" }),
   cell: new THREE.MeshStandardMaterial({ color: "#d9bb87" }),
   lane: new THREE.MeshStandardMaterial({ color: "#4b3423" }),
+  wall: new THREE.MeshStandardMaterial({ color: "#c89352" }),
 };
 
 function getCellCenter(index) {
   const offset = HALF_BOARD - CELL_SIZE / 2;
   return -offset + index * (CELL_SIZE + LANE_SIZE);
+}
+
+function getLaneCenter(index) {
+  return getCellCenter(index) + (CELL_SIZE + LANE_SIZE) / 2;
+}
+
+function createPlacedWallMesh(axis, wall) {
+  const isHorizontal = axis == "horizontal";
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      isHorizontal ? WALL_SPAN : WALL_THICKNESS,
+      WALL_HEIGHT,
+      isHorizontal ? WALL_THICKNESS : WALL_SPAN,
+    ),
+    BOARD_MATERIALS.wall,
+  );
+
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.position.set(
+    isHorizontal ? getLaneCenter(wall.col) : getLaneCenter(wall.col),
+    CELL_HEIGHT + WALL_HEIGHT / 2,
+    isHorizontal ? getLaneCenter(wall.row) : getLaneCenter(wall.row),
+  );
+
+  return mesh;
 }
 
 function createBoardGroup() {
@@ -44,25 +75,29 @@ function createBoardGroup() {
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const tile = new THREE.Mesh(
-        new THREE.BoxGeometry(CELL_SIZE, 0.12, CELL_SIZE),
+        new THREE.BoxGeometry(CELL_SIZE, CELL_HEIGHT, CELL_SIZE),
         BOARD_MATERIALS.cell,
       );
 
       tile.castShadow = true;
       tile.receiveShadow = true;
-      tile.position.set(getCellCenter(c), 0.12, getCellCenter(r));
+      tile.position.set(getCellCenter(c), CELL_HEIGHT, getCellCenter(r));
       boardGroup.add(tile);
 
       if (r == 0 || r == BOARD_SIZE - 1) {
         const extendedCell = new THREE.Mesh(
-          new THREE.BoxGeometry(CELL_SIZE, 0.12, CELL_SIZE * 2 + LANE_SIZE),
+          new THREE.BoxGeometry(
+            CELL_SIZE,
+            CELL_HEIGHT,
+            CELL_SIZE * 2 + LANE_SIZE,
+          ),
           BOARD_MATERIALS.cell,
         );
         extendedCell.castShadow = true;
         extendedCell.receiveShadow = true;
         extendedCell.position.set(
           getCellCenter(c),
-          0.12,
+          CELL_HEIGHT,
           (r === 0 ? -1 : 1) *
             (HALF_BOARD + LANE_SIZE + (CELL_SIZE * 2 + LANE_SIZE) / 2),
         );
@@ -127,6 +162,8 @@ export function createRenderer3D(container) {
 
   const boardGroup = createBoardGroup();
   scene.add(boardGroup);
+  const wallGroup = new THREE.Group();
+  scene.add(wallGroup);
 
   function resizeRenderer() {
     const width = container.clientWidth;
@@ -157,6 +194,16 @@ export function createRenderer3D(container) {
 
   function render(snapshot, options = {}) {
     // TODO: Render snapshot
+
+    // Result after grouping wall segment
+    const horizontalWalls = [
+      { row: 0, col: 1 },
+      { row: 1, col: 2 },
+    ];
+
+    for (const wall of horizontalWalls) {
+      wallGroup.add(createPlacedWallMesh("horizontal", wall));
+    }
   }
 
   return {

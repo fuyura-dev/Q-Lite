@@ -16,6 +16,23 @@ const boardViewport = document.getElementById("board-viewport");
 let engine = null;
 let engineStatus = "Loading Engine...";
 
+const USE_MOCK_WALLS = true;
+
+const MOCK_WALL_SEGMENTS = {
+  horizontalWalls: [
+    { row: 1, col: 1 },
+    { row: 1, col: 2 },
+    { row: 4, col: 3 },
+    { row: 4, col: 2 },
+  ],
+  verticalWalls: [
+    { row: 2, col: 1 },
+    { row: 3, col: 1 },
+    { row: 1, col: 5 },
+    { row: 2, col: 5 },
+  ],
+};
+
 const renderer = createRenderer3D(boardViewport);
 
 function arrayify(vector) {
@@ -46,8 +63,12 @@ function createEngineSnapshot() {
         wallsRemaining: engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: arrayify(engine.getHorizontalWalls()),
-    verticalWalls: arrayify(engine.getVerticalWalls()),
+    horizontalWalls: USE_MOCK_WALLS
+      ? MOCK_WALL_SEGMENTS.horizontalWalls
+      : arrayify(engine.getHorizontalWalls()),
+    verticalWalls: USE_MOCK_WALLS
+      ? MOCK_WALL_SEGMENTS.verticalWalls
+      : arrayify(engine.getVerticalWalls()),
   };
 }
 
