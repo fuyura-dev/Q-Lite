@@ -52,6 +52,9 @@ export function createRenderer3D(container) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
     renderer.setSize(width, height);
     render();
   }

@@ -7,62 +7,54 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <section class="panel">
-        <div class="panel__header">
-          <div>
+    <main class="game-stage">
+      <div id="board-viewport" class="board-viewport"></div>
+      <div class="game-ui">
+        <header class="game-hud">
+          <div class="game-hud__brand">
             <p class="eyebrow">7x7 Quoridor</p>
             <h1>Q-Lite</h1>
           </div>
-          <div class="controls">
-            <label class="field">
+
+          <div class="game-hud__controls">
+            <label for="" class="field">
               <span>Mode</span>
-              <select id="mode-select">
+              <select name="" id="mode-select">
                 <option value="human-vs-human">Human vs Human</option>
                 <option value="human-vs-ai">Human vs AI</option>
               </select>
             </label>
             <button id="restart-button" type="button">Restart</button>
           </div>
-        </div>
+        </header>
 
         <div class="status-bar">
           <p id="status-text">Loading...</p>
         </div>
 
-        <div class="game-layout">
-          <div class="board-frame">
-            <div
-              id="board-viewport"
-              class="board-viewport"
-              aria-label="Quoridor game board"
-            ></div>
-          </div>
-
-          <div class="side-panel">
-            <div class="game-info">
-              <h2 class="game-info__title">Game Info</h2>
-              <div class="info-card">
-                <p class="info-card__label">Current Turn</p>
-                <p class="info-card__value" id="info-current-turn">Player 1</p>
-              </div>
-              <div class="info-card">
-                <p class="info-card__label">Player 1 Walls</p>
-                <p class="info-card__value" id="info-player-one-walls">8</p>
-              </div>
-              <div class="info-card">
-                <p class="info-card__label">Player 2 Walls</p>
-                <p class="info-card__value" id="info-player-two-walls">8</p>
-              </div>
+        <aside class="game-sidebar">
+          <div class="game-info">
+            <h2 class="game-info__title">Game Info</h2>
+            <div class="info-card">
+              <p class="info-card__label">Current Turn</p>
+              <p class="info-card__value" id="info-current-turn">Player 1</p>
             </div>
-
-            <!-- Temporary development info area. Not part of the final UI -->
-            <div class="dev-info">
-              <p id="dev-info-text">blank</p>
+            <div class="info-card">
+              <p class="info-card__label">Player 1 Walls</p>
+              <p class="info-card__value" id="info-player-one-walls">8</p>
+            </div>
+            <div class="info-card">
+              <p class="info-card__label">Player 2 Walls</p>
+              <p class="info-card__value" id="info-player-two-walls">8</p>
             </div>
           </div>
-        </div>
-      </section>
+
+          <!-- Temporary development info area. Not part of the final UI -->
+          <div class="dev-info">
+            <p id="dev-info-text">blank</p>
+          </div>
+        </aside>
+      </div>
     </main>
 
     <script type="module" src="./src/main.js"></script>
