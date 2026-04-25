@@ -6,6 +6,8 @@ const CELL_SIZE = 0.9;
 const LANE_SIZE = 0.2;
 const BOARD_WORLD_SIZE = BOARD_SIZE * CELL_SIZE + (BOARD_SIZE - 1) * LANE_SIZE;
 const HALF_BOARD = BOARD_WORLD_SIZE / 2;
+const BOARD_DEPTH = BOARD_WORLD_SIZE + CELL_SIZE * 4 + LANE_SIZE * 2;
+const HALF_DEPTH = BOARD_DEPTH / 2;
 
 const BOARD_MATERIALS = {
   frame: new THREE.MeshStandardMaterial({ color: "#714d31" }),
@@ -23,7 +25,7 @@ function createBoardGroup() {
   const boardGroup = new THREE.Group();
 
   const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(BOARD_WORLD_SIZE + 1, 0.7, BOARD_WORLD_SIZE + 3),
+    new THREE.BoxGeometry(BOARD_WORLD_SIZE + 1, 0.7, BOARD_DEPTH + 1.4),
     BOARD_MATERIALS.frame,
   );
   frame.receiveShadow = true;
@@ -31,11 +33,7 @@ function createBoardGroup() {
   boardGroup.add(frame);
 
   const topPanel = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      BOARD_WORLD_SIZE + 0.42,
-      0.16,
-      BOARD_WORLD_SIZE + 0.42,
-    ),
+    new THREE.BoxGeometry(BOARD_WORLD_SIZE + 0.42, 0.16, BOARD_DEPTH + 0.84),
     BOARD_MATERIALS.top,
   );
   topPanel.receiveShadow = true;
@@ -54,6 +52,22 @@ function createBoardGroup() {
       tile.receiveShadow = true;
       tile.position.set(getCellCenter(c), 0.12, getCellCenter(r));
       boardGroup.add(tile);
+
+      if (r == 0 || r == BOARD_SIZE - 1) {
+        const extendedCell = new THREE.Mesh(
+          new THREE.BoxGeometry(CELL_SIZE, 0.12, CELL_SIZE * 2 + LANE_SIZE),
+          BOARD_MATERIALS.cell,
+        );
+        extendedCell.castShadow = true;
+        extendedCell.receiveShadow = true;
+        extendedCell.position.set(
+          getCellCenter(c),
+          0.12,
+          (r === 0 ? -1 : 1) *
+            (HALF_BOARD + LANE_SIZE + (CELL_SIZE * 2 + LANE_SIZE) / 2),
+        );
+        boardGroup.add(extendedCell);
+      }
     }
   }
 
