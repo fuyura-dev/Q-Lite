@@ -16,9 +16,26 @@ const boardViewport = document.getElementById("board-viewport");
 let engine = null;
 let engineStatus = "Loading Engine...";
 
-const USE_MOCK_WALLS = true;
+const USE_MOCK = true;
 
-const MOCK_WALL_SEGMENTS = {
+const MOCK_SNAPSHOT = {
+  boardSize: 7,
+  currentTurn: 1,
+  winner: null,
+  players: [
+    {
+      id: 1,
+      row: 6,
+      col: 3,
+      wallsRemaining: 6,
+    },
+    {
+      id: 2,
+      row: 0,
+      col: 3,
+      wallsRemaining: 7,
+    },
+  ],
   horizontalWalls: [
     { row: 1, col: 1 },
     { row: 1, col: 2 },
@@ -45,6 +62,8 @@ function arrayify(vector) {
 
 // Still temporaray
 function createEngineSnapshot() {
+  if (USE_MOCK) return MOCK_SNAPSHOT;
+
   return {
     boardSize: 7,
     currentTurn: engine.getCurrentTurn(),
@@ -63,12 +82,8 @@ function createEngineSnapshot() {
         wallsRemaining: engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: USE_MOCK_WALLS
-      ? MOCK_WALL_SEGMENTS.horizontalWalls
-      : arrayify(engine.getHorizontalWalls()),
-    verticalWalls: USE_MOCK_WALLS
-      ? MOCK_WALL_SEGMENTS.verticalWalls
-      : arrayify(engine.getVerticalWalls()),
+    horizontalWalls: arrayify(engine.getHorizontalWalls()),
+    verticalWalls: arrayify(engine.getVerticalWalls()),
   };
 }
 

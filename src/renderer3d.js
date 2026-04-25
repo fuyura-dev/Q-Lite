@@ -86,6 +86,41 @@ function createPlacedWallMesh(axis, wall) {
   return mesh;
 }
 
+function createReserveWallMesh() {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, WALL_SPAN),
+    BOARD_MATERIALS.wall,
+  );
+
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+
+  return mesh;
+}
+
+function getReserveWallSlots() {
+  return [
+    getLaneCenter(0),
+    getLaneCenter(1),
+    getLaneCenter(2),
+    getLaneCenter(3),
+    getLaneCenter(4),
+    getLaneCenter(5),
+    -HALF_BOARD - LANE_SIZE / 2,
+    HALF_BOARD + LANE_SIZE / 2,
+  ];
+}
+
+function getReserveWallPosition(playerId, index) {
+  const slots = getReserveWallSlots();
+
+  return {
+    x: slots[index],
+    y: CELL_HEIGHT + WALL_HEIGHT / 2,
+    z: getLaneCenter(playerId == 1 ? 7 : -2),
+  };
+}
+
 function createBoardGroup() {
   const boardGroup = new THREE.Group();
 
@@ -196,8 +231,10 @@ export function createRenderer3D(container) {
 
   const boardGroup = createBoardGroup();
   scene.add(boardGroup);
-  const wallGroup = new THREE.Group();
-  scene.add(wallGroup);
+  const placedWallGroup = new THREE.Group();
+  scene.add(placedWallGroup);
+  const reserveWallGroup = new THREE.Group();
+  scene.add(reserveWallGroup);
 
   function resizeRenderer() {
     const width = container.clientWidth;
@@ -231,6 +268,7 @@ export function createRenderer3D(container) {
       return;
     }
 
+    // Placed Walls
     const horizontalWalls = mergeWallSegments(
       snapshot.horizontalWalls,
       "horizontal",
@@ -238,10 +276,20 @@ export function createRenderer3D(container) {
     const verticalWalls = mergeWallSegments(snapshot.verticalWalls, "vertical");
 
     for (const wall of horizontalWalls) {
-      wallGroup.add(createPlacedWallMesh("horizontal", wall));
+      placedWallGroup.add(createPlacedWallMesh("horizontal", wall));
     }
     for (const wall of verticalWalls) {
-      wallGroup.add(createPlacedWallMesh("vertical", wall));
+      placedWallGroup.add(createPlacedWallMesh("vertical", wall));
+    }
+
+    // Unplaced Walls
+    for (const player of snapshot.players) {
+      for (let i = 0; i < player.wallsRemaining; i++) {
+        const mesh = createReserveWallMesh();
+        const position = getReserveWallPosition(player.id, i);
+        mesh.position.set(position.x, position.y, position.z);
+        reserveWallGroup.add(mesh);
+      }
     }
   }
 
