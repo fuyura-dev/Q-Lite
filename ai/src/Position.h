@@ -34,8 +34,7 @@ public:
 
 private:
 	void ChangeTurn();
-	bool IsAnyPawnPathBlocked() const;
-	bool IsPawnPathBlocked(Color color) const;
+	static bool IsReachable(GridPosition start_pos, uint8_t target_row, uint64_t right_walls, uint64_t bot_walls);
 
 	Color currentTurn = kWhite;
 	uint8_t remainingWalls[2] = {
