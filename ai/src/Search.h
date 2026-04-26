@@ -2,4 +2,4 @@
 
 #include "Position.h"
 
-Move DoSearch(const Position& pos);
+Move DoSearch(Position pos);

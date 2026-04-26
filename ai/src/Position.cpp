@@ -14,12 +14,22 @@ uint8_t Position::GetRemainingWalls(Color player) const {
 	return remainingWalls[player];
 }
 
-bool Position::DoMove(Move move) {
+bool Position::DoMove(const Move &move) {
 	if (move.kind == MoveKind::kMovePawn) {
 		return MovePawn(move.pos);
 	}
 	PlaceWall(move.pos, *move.side);
 	return false;
+}
+
+void Position::UndoMove(const Move& move) {
+	ChangeTurn();
+	if (move.kind == MoveKind::kMovePawn) {
+		pawnPositions[currentTurn] = move.pos;
+	} else {
+		remainingWalls[currentTurn]++;
+		walls[*move.side] &= ~(1LL << move.pos.compress());
+	}
 }
 
 bool Position::MovePawn(GridPosition pos) {

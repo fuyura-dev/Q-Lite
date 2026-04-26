@@ -19,7 +19,9 @@ using Score = int;
 
 class Position {
 public:
-	bool DoMove(Move move);
+	bool DoMove(const Move &move);
+	void UndoMove(const Move& move);
+
 	bool MovePawn(GridPosition pos);
 	void PlaceWall(GridPosition pos, WallSide side);
 

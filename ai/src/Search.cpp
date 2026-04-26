@@ -14,17 +14,22 @@ constexpr Bounds kInitialBounds = {
 
 namespace {
 
-Score AlphaBetaMin(Position pos, Bounds bounds, Move& best_move, int depth);
+Score AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth);
 
-Score AlphaBetaMax(Position pos, Bounds bounds, Move& best_move, int depth = 0) {
+Score AlphaBetaMax(Position &pos, Bounds bounds, Move& best_move, int depth = 0) {
 	if (depth == kMaxDepth || pos.IsFinished()) {
 		return pos.Evaluate();
 	}
+	Move restore = {
+		MoveKind::kMovePawn,
+		pos.GetPawnPosition(pos.GetCurrentTurn())
+	};
 
 	for (const auto move : AllMoveList(pos)) {
-		Position tmp_pos = pos;
-		tmp_pos.DoMove(move);
-		Score score = AlphaBetaMin(tmp_pos, bounds, best_move, depth + 1);
+		pos.DoMove(move);
+		Score score = AlphaBetaMin(pos, bounds, best_move, depth + 1);
+		pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
+
 		if (bounds.alpha < score) {
 			bounds.alpha = score;
 			if (depth == 0) {
@@ -38,15 +43,21 @@ Score AlphaBetaMax(Position pos, Bounds bounds, Move& best_move, int depth = 0) 
 	return bounds.alpha;
 }
 
-Score AlphaBetaMin(Position pos, Bounds bounds, Move& best_move, int depth = 0) {
+Score AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth = 0) {
 	if (depth == kMaxDepth || pos.IsFinished()) {
 		return pos.Evaluate();
 	}
 
+	Move restore = {
+		MoveKind::kMovePawn,
+		pos.GetPawnPosition(pos.GetCurrentTurn())
+	};
+
 	for (const auto move : AllMoveList(pos)) {
-		Position tmp_pos = pos;
-		tmp_pos.DoMove(move);
-		Score score = AlphaBetaMax(tmp_pos, bounds, best_move, depth + 1);
+		pos.DoMove(move);
+		Score score = AlphaBetaMax(pos, bounds, best_move, depth + 1);
+		pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
+
 		if (score < bounds.beta) {
 			bounds.beta = score;
 			if (depth == 0) {
@@ -62,7 +73,7 @@ Score AlphaBetaMin(Position pos, Bounds bounds, Move& best_move, int depth = 0) 
 
 }
 
-Move DoSearch(const Position& pos) {
+Move DoSearch(Position pos) {
 	Move best_move;
 	if (pos.GetCurrentTurn() == kWhite) {
 		AlphaBetaMax(pos, kInitialBounds, best_move);
