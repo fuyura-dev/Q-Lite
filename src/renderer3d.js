@@ -322,6 +322,9 @@ export function createRenderer3D(container, options = {}) {
   let selectedCellKey = "";
   let selectedWallSlotKey = "";
   let selectedReserveWallKey = "";
+  const reserveWallSlotsByPlayer = new Map();
+  const reserveWallIdCounters = new Map();
+  let pendingPlacedReserveWallKey = "";
 
   const ambientLight = new THREE.AmbientLight("#f0e5cf", 0.55);
   scene.add(ambientLight);
@@ -350,6 +353,8 @@ export function createRenderer3D(container, options = {}) {
   scene.add(reserveWallGroup);
   const pawnGroup = new THREE.Group();
   scene.add(pawnGroup);
+  const moveTargetGroup = new THREE.Group();
+  scene.add(moveTargetGroup);
   const hoverCell = new THREE.Mesh(
     new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.05, CELL_SIZE * 0.92),
     new THREE.MeshStandardMaterial({
@@ -390,6 +395,12 @@ export function createRenderer3D(container, options = {}) {
   );
   selectedWall.visible = false;
   scene.add(selectedWall);
+
+  function rerenderSnapshot() {
+    if (latestSnapshot) {
+      render(latestSnapshot);
+    }
+  }
 
   function syncReserveWallSelection() {
     for (const mesh of reserveWallGroup.children) {
@@ -447,6 +458,12 @@ export function createRenderer3D(container, options = {}) {
     }
   }
 
+  function notifySelectMoveTarget(moveTarget) {
+    if (options.onSelectMoveTarget) {
+      options.onSelectMoveTarget(moveTarget);
+    }
+  }
+
   function setHoveredCell(cell) {
     const cellKey = cell ? `${cell.row}-${cell.col}` : "";
     if (cellKey == hoveredCellKey) {
@@ -481,6 +498,7 @@ export function createRenderer3D(container, options = {}) {
     if (!cell) {
       selectedCell.visible = false;
       notifySelectCell(null);
+      rerenderSnapshot();
       return;
     }
 
@@ -491,6 +509,7 @@ export function createRenderer3D(container, options = {}) {
       getCellCenter(cell.row),
     );
     notifySelectCell(cell);
+    rerenderSnapshot();
   }
 
   function setHoveredWallSlot(wallSlot) {
@@ -586,10 +605,96 @@ export function createRenderer3D(container, options = {}) {
     if (!selectedReserveWallKey) {
       setSelectedWallSlot(null);
       notifySelectReserveWall(null);
+      rerenderSnapshot();
       return;
     }
 
     notifySelectReserveWall({ key: selectedReserveWallKey });
+    rerenderSnapshot();
+  }
+
+  function ensureReserveWallKeys(playerId, count) {
+    if (!reserveWallSlotsByPlayer.has(playerId)) {
+      reserveWallSlotsByPlayer.set(playerId, []);
+      reserveWallIdCounters.set(playerId, 0);
+    }
+
+    const slots = reserveWallSlotsByPlayer.get(playerId);
+    let nextId = reserveWallIdCounters.get(playerId);
+    const filledCount = slots.filter(Boolean).length;
+
+    while (slots.length < getReserveWallSlots().length) {
+      slots.push(null);
+    }
+
+    for (
+      let i = 0;
+      i < slots.length &&
+      filledCount + (nextId - reserveWallIdCounters.get(playerId)) < count;
+      i++
+    ) {
+      if (slots[i]) {
+        continue;
+      }
+      slots[i] = `player-${playerId}-wall-${nextId}`;
+      nextId++;
+    }
+
+    reserveWallIdCounters.set(playerId, nextId);
+  }
+
+  function syncReserveWalls(snapshot) {
+    const activePlayerIds = new Set(
+      snapshot.players.map((player) => player.id),
+    );
+
+    for (const player of snapshot.players) {
+      ensureReserveWallKeys(player.id, player.wallsRemaining);
+      const slots = reserveWallSlotsByPlayer.get(player.id);
+      const targetCount = player.wallsRemaining;
+      let filledCount = slots.filter(Boolean).length;
+
+      while (filledCount > targetCount) {
+        const selectedIndex = pendingPlacedReserveWallKey
+          ? slots.indexOf(pendingPlacedReserveWallKey)
+          : -1;
+
+        if (selectedIndex >= 0) {
+          slots[selectedIndex] = null;
+          pendingPlacedReserveWallKey = "";
+          filledCount--;
+          continue;
+        }
+
+        const lastFilledIndex = slots.findLastIndex(Boolean);
+        if (lastFilledIndex < 0) {
+          break;
+        }
+        slots[lastFilledIndex] = null;
+        filledCount--;
+      }
+    }
+
+    for (const playerId of [...reserveWallSlotsByPlayer.keys()]) {
+      if (!activePlayerIds.has(playerId)) {
+        reserveWallSlotsByPlayer.delete(playerId);
+        reserveWallIdCounters.delete(playerId);
+      }
+    }
+  }
+
+  function clearWallPlacementSelection() {
+    setSelectedReserveWall(null);
+    setSelectedWallSlot(null);
+  }
+
+  function commitSelectedReserveWall() {
+    pendingPlacedReserveWallKey = selectedReserveWallKey;
+  }
+
+  function clearMoveSelection() {
+    setSelectedCell(null);
+    notifySelectMoveTarget(null);
   }
 
   function updateHoveredCell(clientX, clientY) {
@@ -653,6 +758,17 @@ export function createRenderer3D(container, options = {}) {
       wallSlotIntersections[0]?.object?.userData?.wallSlot ?? null;
     setSelectedWallSlot(wallSlot);
 
+    const moveTargetIntersections = raycaster.intersectObjects(
+      moveTargetGroup.children,
+      false,
+    );
+    const moveTarget =
+      moveTargetIntersections[0]?.object?.userData?.moveTarget ?? null;
+    if (moveTarget) {
+      notifySelectMoveTarget(moveTarget);
+      return;
+    }
+
     const intersections = raycaster.intersectObjects(cellMeshes, false);
     const cell = intersections[0]?.object?.userData?.cell ?? null;
     setSelectedCell(cell);
@@ -682,12 +798,12 @@ export function createRenderer3D(container, options = {}) {
     }
 
     latestSnapshot = snapshot;
+    syncReserveWalls(snapshot);
 
     clearGroup(pawnGroup);
     clearGroup(placedWallGroup);
     clearGroup(reserveWallGroup);
-
-    const validReserveWallKeys = new Set();
+    clearGroup(moveTargetGroup);
 
     for (const player of snapshot.players) {
       const mesh = createPawnMesh(player.id);
@@ -712,9 +828,12 @@ export function createRenderer3D(container, options = {}) {
 
     // Unplaced Walls
     for (const player of snapshot.players) {
-      for (let i = 0; i < player.wallsRemaining; i++) {
-        const reserveWallKey = `player-${player.id}-wall-${i}`;
-        validReserveWallKeys.add(reserveWallKey);
+      const reserveWallSlots = reserveWallSlotsByPlayer.get(player.id) ?? [];
+      for (let i = 0; i < reserveWallSlots.length; i++) {
+        const reserveWallKey = reserveWallSlots[i];
+        if (!reserveWallKey) {
+          continue;
+        }
         const mesh = createReserveWallMesh(
           reserveWallKey,
           reserveWallKey == selectedReserveWallKey,
@@ -725,15 +844,50 @@ export function createRenderer3D(container, options = {}) {
       }
     }
 
+    const validReserveWallKeys = new Set(
+      [...reserveWallSlotsByPlayer.values()].flat().filter(Boolean),
+    );
     if (
       selectedReserveWallKey &&
       !validReserveWallKeys.has(selectedReserveWallKey)
     ) {
       setSelectedReserveWall(null);
     }
+
+    const currentPlayer =
+      snapshot.players.find((player) => player.id == snapshot.currentTurn) ??
+      null;
+    const canShowMoveTargets =
+      currentPlayer &&
+      selectedCellKey == `${currentPlayer.row}-${currentPlayer.col}`;
+
+    if (canShowMoveTargets) {
+      for (const moveTarget of snapshot.legalPawnMoves ?? []) {
+        const mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.18, 0.18, 0.06, 24),
+          new THREE.MeshStandardMaterial({
+            color: "#4bb978",
+            transparent: true,
+            opacity: 0.85,
+          }),
+        );
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData.moveTarget = moveTarget;
+        mesh.position.set(
+          getCellCenter(moveTarget.col),
+          CELL_HEIGHT + 0.08,
+          getCellCenter(moveTarget.row),
+        );
+        moveTargetGroup.add(mesh);
+      }
+    }
   }
 
   return {
+    clearMoveSelection,
+    commitSelectedReserveWall,
+    clearWallPlacementSelection,
     render,
   };
 }

@@ -20,8 +20,11 @@ let hoverWallLabel = "Hovered Wall: none";
 let selectedCellLabel = "Selected Cell: none";
 let selectedWallLabel = "Selected Wall: none";
 let selectedReserveWallLabel = "Selected Reserve Wall: none";
+let selectedReserveWall = null;
+let actionStatusLabel = "Action: none";
+let selectedMoveTargetLabel = "Selected Move Target: none";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const MOCK_SNAPSHOT = {
   boardSize: 7,
@@ -53,10 +56,95 @@ const MOCK_SNAPSHOT = {
     { row: 1, col: 5 },
     { row: 2, col: 5 },
   ],
+  legalPawnMoves: [
+    { row: 5, col: 3 },
+    { row: 6, col: 2 },
+    { row: 6, col: 4 },
+  ],
 };
 
 function updateDevInfo() {
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}`;
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}`;
+}
+
+function getWallSide(axis) {
+  return axis === "horizontal"
+    ? engine.wallSide.BOTTOM_SIDE
+    : engine.wallSide.RIGHT_SIDE;
+}
+
+function tryPlaceSelectedWall(wallSlot) {
+  if (!wallSlot || !selectedReserveWall) {
+    return;
+  }
+
+  if (USE_MOCK) {
+    actionStatusLabel = `Action: mock place ${wallSlot.axis} wall at (${wallSlot.row}, ${wallSlot.col})`;
+    updateDevInfo();
+    return;
+  }
+
+  if (!engine) {
+    actionStatusLabel = "Action: engine not ready";
+    updateDevInfo();
+    return;
+  }
+
+  const result = engine.placeWall(
+    wallSlot.row,
+    wallSlot.col,
+    getWallSide(wallSlot.axis),
+  );
+
+  if (result === engine.moveResult.INVALID) {
+    actionStatusLabel = `Action: invalid ${wallSlot.axis} wall at (${wallSlot.row}, ${wallSlot.col})`;
+    updateDevInfo();
+    return;
+  }
+
+  actionStatusLabel = `Action: placed ${wallSlot.axis} wall at (${wallSlot.row}, ${wallSlot.col})`;
+  renderer.commitSelectedReserveWall();
+  selectedReserveWall = null;
+  selectedReserveWallLabel = "Selected Reserve Wall: none";
+  selectedWallLabel = "Selected Wall: none";
+  renderer.clearWallPlacementSelection();
+  refresh();
+}
+
+function tryMovePawn(moveTarget) {
+  if (!moveTarget) {
+    return;
+  }
+
+  if (USE_MOCK) {
+    actionStatusLabel = `Action: mock move pawn to (${moveTarget.row}, ${moveTarget.col})`;
+    selectedMoveTargetLabel = `Selected Move Target: (${moveTarget.row}, ${moveTarget.col})`;
+    updateDevInfo();
+    return;
+  }
+
+  if (!engine) {
+    actionStatusLabel = "Action: engine not ready";
+    updateDevInfo();
+    return;
+  }
+
+  const result = engine.movePawn(moveTarget.row, moveTarget.col);
+
+  if (result === engine.moveResult.INVALID) {
+    actionStatusLabel = `Action: invalid pawn move to (${moveTarget.row}, ${moveTarget.col})`;
+    selectedMoveTargetLabel = `Selected Move Target: (${moveTarget.row}, ${moveTarget.col})`;
+    updateDevInfo();
+    return;
+  }
+
+  actionStatusLabel =
+    result === engine.moveResult.WIN
+      ? `Action: winning pawn move to (${moveTarget.row}, ${moveTarget.col})`
+      : `Action: moved pawn to (${moveTarget.row}, ${moveTarget.col})`;
+  selectedMoveTargetLabel = "Selected Move Target: none";
+  renderer.clearMoveSelection();
+  refresh();
 }
 
 const renderer = createRenderer3D(boardViewport, {
@@ -83,12 +171,24 @@ const renderer = createRenderer3D(boardViewport, {
       ? `Selected Wall: ${wallSlot.axis} (${wallSlot.row}, ${wallSlot.col})`
       : "Selected Wall: none";
     updateDevInfo();
+    tryPlaceSelectedWall(wallSlot);
   },
   onSelectReserveWall: (reserveWall) => {
+    selectedReserveWall = reserveWall;
     selectedReserveWallLabel = reserveWall
       ? `Selected Reserve Wall: ${reserveWall.key}`
       : "Selected Reserve Wall: none";
+    if (!reserveWall) {
+      selectedWallLabel = "Selected Wall: none";
+    }
     updateDevInfo();
+  },
+  onSelectMoveTarget: (moveTarget) => {
+    selectedMoveTargetLabel = moveTarget
+      ? `Selected Move Target: (${moveTarget.row}, ${moveTarget.col})`
+      : "Selected Move Target: none";
+    updateDevInfo();
+    tryMovePawn(moveTarget);
   },
 });
 
@@ -124,6 +224,7 @@ function createEngineSnapshot() {
     ],
     horizontalWalls: arrayify(engine.getHorizontalWalls()),
     verticalWalls: arrayify(engine.getVerticalWalls()),
+    legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
   };
 }
 
