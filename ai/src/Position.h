@@ -31,6 +31,7 @@ public:
 	bool CanPlaceWall(GridPosition pos, WallSide side) const;
 
 	Score Evaluate() const;
+	bool IsFinished() const;
 
 private:
 	void ChangeTurn();

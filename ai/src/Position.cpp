@@ -127,6 +127,10 @@ Score Position::Evaluate() const {  // positive  if white is winning
 
 }
 
+bool Position::IsFinished() const {
+	return pawnPositions[kWhite].row == kTargetRow[kWhite] || pawnPositions[kBlack].row == kTargetRow[kBlack];
+}
+
 void Position::ChangeTurn() {
 	currentTurn = currentTurn == kWhite ? kBlack : kWhite;
 }
