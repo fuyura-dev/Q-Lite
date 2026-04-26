@@ -61,7 +61,25 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	if (pos.row == kGridSize - 1) {
 		return false;
 	}
-	if (HasWall(pos, side)) {
+
+	uint64_t same_side_mask = 1LL << pos.compress();
+	if (side == kBottomSide) {
+		if (pos.col > 0) {
+			same_side_mask |= 1LL << (pos + GridPosition{ 0, -1 }).compress();
+		}
+		if (pos.col < kGridSize - 2) {
+			same_side_mask |= 1LL << (pos + GridPosition{ 0, 1 }).compress();
+		}
+	} else {
+		if (pos.col > 0) {
+			same_side_mask |= 1LL << (pos + GridPosition{ -1, 0 }).compress();
+		}
+		if (pos.col < kGridSize - 2) {
+			same_side_mask |= 1LL << (pos + GridPosition{ 1, 0 }).compress();
+		}
+	}
+
+	if (walls[side] & same_side_mask) {
 		return false;
 	}
 	uint64_t mask = 1LL << pos.compress();
