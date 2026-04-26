@@ -314,6 +314,8 @@ export function createRenderer3D(container, options = {}) {
   let latestSnapshot = null;
   let hoveredCellKey = "";
   let hoveredWallSlotKey = "";
+  let selectedCellKey = "";
+  let selectedWallSlotKey = "";
 
   const ambientLight = new THREE.AmbientLight("#f0e5cf", 0.55);
   scene.add(ambientLight);
@@ -352,6 +354,16 @@ export function createRenderer3D(container, options = {}) {
   );
   hoverCell.visible = false;
   scene.add(hoverCell);
+  const selectedCell = new THREE.Mesh(
+    new THREE.BoxGeometry(CELL_SIZE * 0.82, 0.07, CELL_SIZE * 0.82),
+    new THREE.MeshStandardMaterial({
+      color: "#d98f39",
+      transparent: true,
+      opacity: 0.72,
+    }),
+  );
+  selectedCell.visible = false;
+  scene.add(selectedCell);
   const hoverWall = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
     new THREE.MeshStandardMaterial({
@@ -361,8 +373,17 @@ export function createRenderer3D(container, options = {}) {
     }),
   );
   hoverWall.visible = false;
-  // hoverWall.position.set(1, 1, 1)
   scene.add(hoverWall);
+  const selectedWall = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
+    new THREE.MeshStandardMaterial({
+      color: "#f08d49",
+      transparent: true,
+      opacity: 0.82,
+    }),
+  );
+  selectedWall.visible = false;
+  scene.add(selectedWall);
 
   function resizeRenderer() {
     const width = container.clientWidth;
@@ -387,9 +408,21 @@ export function createRenderer3D(container, options = {}) {
     }
   }
 
+  function notifySelectCell(cell) {
+    if (options.onSelectCell) {
+      options.onSelectCell(cell);
+    }
+  }
+
   function notifyWallHover(wallSlot) {
     if (options.onHoverWallSlot) {
       options.onHoverWallSlot(wallSlot);
+    }
+  }
+
+  function notifySelectWallSlot(wallSlot) {
+    if (options.onSelectWallSlot) {
+      options.onSelectWallSlot(wallSlot);
     }
   }
 
@@ -414,6 +447,29 @@ export function createRenderer3D(container, options = {}) {
       getCellCenter(cell.row),
     );
     notifyHover(cell);
+  }
+
+  function setSelectedCell(cell) {
+    const cellKey = cell ? `${cell.row}-${cell.col}` : "";
+    if (cellKey == selectedCellKey) {
+      return;
+    }
+
+    selectedCellKey = cellKey;
+
+    if (!cell) {
+      selectedCell.visible = false;
+      notifySelectCell(null);
+      return;
+    }
+
+    selectedCell.visible = true;
+    selectedCell.position.set(
+      getCellCenter(cell.col),
+      CELL_HEIGHT + CELL_HEIGHT / 2 + 0.03,
+      getCellCenter(cell.row),
+    );
+    notifySelectCell(cell);
   }
 
   function setHoveredWallSlot(wallSlot) {
@@ -454,6 +510,43 @@ export function createRenderer3D(container, options = {}) {
     notifyWallHover(previewWallSlot);
   }
 
+  function setSelectedWallSlot(wallSlot) {
+    const previewWallSlot =
+      wallSlot &&
+      ((wallSlot.axis == "horizontal" && wallSlot.col < BOARD_SIZE - 1) ||
+        (wallSlot.axis == "vertical" && wallSlot.row < BOARD_SIZE - 1))
+        ? wallSlot
+        : null;
+    const wallSlotKey = previewWallSlot
+      ? `${previewWallSlot.axis}-${previewWallSlot.row}-${previewWallSlot.col}`
+      : "";
+    if (wallSlotKey == selectedWallSlotKey) {
+      return;
+    }
+
+    selectedWallSlotKey = wallSlotKey;
+
+    if (!previewWallSlot) {
+      selectedWall.visible = false;
+      notifySelectWallSlot(null);
+      return;
+    }
+
+    selectedWall.visible = true;
+    selectedWall.geometry.dispose();
+    selectedWall.geometry = new THREE.BoxGeometry(
+      previewWallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
+      WALL_HEIGHT,
+      previewWallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
+    );
+    selectedWall.position.set(
+      getLaneCenter(previewWallSlot.col),
+      CELL_HEIGHT + WALL_HEIGHT / 2,
+      getLaneCenter(previewWallSlot.row),
+    );
+    notifySelectWallSlot(previewWallSlot);
+  }
+
   function updateHoveredCell(clientX, clientY) {
     if (!latestSnapshot) {
       setHoveredCell(null);
@@ -481,6 +574,31 @@ export function createRenderer3D(container, options = {}) {
 
   renderer.domElement.addEventListener("pointermove", (event) => {
     updateHoveredCell(event.clientX, event.clientY);
+  });
+
+  renderer.domElement.addEventListener("click", (event) => {
+    if (!latestSnapshot) {
+      setSelectedCell(null);
+      setSelectedWallSlot(null);
+      return;
+    }
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+    const wallSlotIntersections = raycaster.intersectObjects(
+      [...horizontalSlotMeshes, ...verticalSlotMeshes],
+      false,
+    );
+    const wallSlot =
+      wallSlotIntersections[0]?.object?.userData?.wallSlot ?? null;
+    setSelectedWallSlot(wallSlot);
+
+    const intersections = raycaster.intersectObjects(cellMeshes, false);
+    const cell = intersections[0]?.object?.userData?.cell ?? null;
+    setSelectedCell(cell);
   });
 
   renderer.domElement.addEventListener("pointerleave", () => {

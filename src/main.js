@@ -17,6 +17,8 @@ let engine = null;
 let engineStatus = "Loading Engine...";
 let hoverCellLabel = "Hovered Cell: none";
 let hoverWallLabel = "Hovered Wall: none";
+let selectedCellLabel = "Selected Cell: none";
+let selectedWallLabel = "Selected Wall: none";
 
 const USE_MOCK = true;
 
@@ -53,7 +55,7 @@ const MOCK_SNAPSHOT = {
 };
 
 function updateDevInfo() {
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}`;
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}`;
 }
 
 const renderer = createRenderer3D(boardViewport, {
@@ -67,6 +69,18 @@ const renderer = createRenderer3D(boardViewport, {
     hoverWallLabel = wallSlot
       ? `Hovered Wall: ${wallSlot.axis} (${wallSlot.row}, ${wallSlot.col})`
       : "Hovered Wall: none";
+    updateDevInfo();
+  },
+  onSelectCell: (cell) => {
+    selectedCellLabel = cell
+      ? `Selected Cell: (${cell.row}, ${cell.col})`
+      : "Selected Cell: none";
+    updateDevInfo();
+  },
+  onSelectWallSlot: (wallSlot) => {
+    selectedWallLabel = wallSlot
+      ? `Selected Wall: ${wallSlot.axis} (${wallSlot.row}, ${wallSlot.col})`
+      : "Selected Wall: none";
     updateDevInfo();
   },
 });
