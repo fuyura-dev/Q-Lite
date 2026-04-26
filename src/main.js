@@ -15,6 +15,8 @@ const boardViewport = document.getElementById("board-viewport");
 
 let engine = null;
 let engineStatus = "Loading Engine...";
+let hoverCellLabel = "Hovered Cell: none";
+let hoverWallLabel = "Hovered Wall: none";
 
 const USE_MOCK = true;
 
@@ -50,7 +52,24 @@ const MOCK_SNAPSHOT = {
   ],
 };
 
-const renderer = createRenderer3D(boardViewport);
+function updateDevInfo() {
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}`;
+}
+
+const renderer = createRenderer3D(boardViewport, {
+  onHoverCell: (cell) => {
+    hoverCellLabel = cell
+      ? `Hovered Cell: (${cell.row}, ${cell.col})`
+      : "Hovered Cell: none";
+    updateDevInfo();
+  },
+  onHoverWallSlot: (wallSlot) => {
+    hoverWallLabel = wallSlot
+      ? `Hovered Wall: ${wallSlot.axis} (${wallSlot.row}, ${wallSlot.col})`
+      : "Hovered Wall: none";
+    updateDevInfo();
+  },
+});
 
 function arrayify(vector) {
   const result = [];
@@ -110,7 +129,7 @@ function updateStatus(snapshot) {
   infoPlayerTwoWalls.textContent = playerTwo
     ? `${playerTwo.wallsRemaining}`
     : "-";
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}`;
+  updateDevInfo();
 }
 
 function refresh() {

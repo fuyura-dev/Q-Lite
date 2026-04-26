@@ -23,6 +23,10 @@ const BOARD_MATERIALS = {
   pawnTwo: new THREE.MeshStandardMaterial({ color: "#5a5a5a" }),
 };
 
+function clearGroup(group) {
+  group.clear();
+}
+
 function getCellCenter(index) {
   const offset = HALF_BOARD - CELL_SIZE / 2;
   return -offset + index * (CELL_SIZE + LANE_SIZE);
@@ -146,8 +150,54 @@ function getReserveWallPosition(playerId, index) {
   };
 }
 
+function createWallSlotTargets() {
+  const horizontalSlotMeshes = [];
+  const verticalSlotMeshes = [];
+  const slotMaterial = new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+
+  for (let row = 0; row < BOARD_SIZE - 1; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      const horizontalSlot = new THREE.Mesh(
+        new THREE.BoxGeometry(CELL_SIZE, 0.18, LANE_SIZE * 1.4),
+        slotMaterial,
+      );
+      horizontalSlot.position.set(
+        getCellCenter(col),
+        CELL_HEIGHT + 0.09,
+        getLaneCenter(row),
+      );
+      horizontalSlot.userData.wallSlot = { axis: "horizontal", row, col };
+      horizontalSlotMeshes.push(horizontalSlot);
+    }
+  }
+
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE - 1; col++) {
+      const verticalSlot = new THREE.Mesh(
+        new THREE.BoxGeometry(LANE_SIZE * 1.4, 0.18, CELL_SIZE),
+        slotMaterial,
+      );
+      verticalSlot.position.set(
+        getLaneCenter(col),
+        CELL_HEIGHT + 0.09,
+        getCellCenter(row),
+      );
+      verticalSlot.userData.wallSlot = { axis: "vertical", row, col };
+      verticalSlotMeshes.push(verticalSlot);
+    }
+  }
+
+  return { horizontalSlotMeshes, verticalSlotMeshes };
+}
+
 function createBoardGroup() {
   const boardGroup = new THREE.Group();
+  const cellMeshes = [];
+  const { horizontalSlotMeshes, verticalSlotMeshes } = createWallSlotTargets();
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(BOARD_WORLD_SIZE + 1, 0.7, BOARD_DEPTH + 1.4),
@@ -176,7 +226,9 @@ function createBoardGroup() {
       tile.castShadow = true;
       tile.receiveShadow = true;
       tile.position.set(getCellCenter(c), CELL_HEIGHT, getCellCenter(r));
+      tile.userData.cell = { row: r, col: c };
       boardGroup.add(tile);
+      cellMeshes.push(tile);
 
       if (r == 0 || r == BOARD_SIZE - 1) {
         const extendedCell = new THREE.Mesh(
@@ -198,6 +250,13 @@ function createBoardGroup() {
         boardGroup.add(extendedCell);
       }
     }
+  }
+
+  for (const slotMesh of horizontalSlotMeshes) {
+    boardGroup.add(slotMesh);
+  }
+  for (const slotMesh of verticalSlotMeshes) {
+    boardGroup.add(slotMesh);
   }
 
   // LANE
@@ -222,10 +281,10 @@ function createBoardGroup() {
     boardGroup.add(horizontalLane);
   }
 
-  return boardGroup;
+  return { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes };
 }
 
-export function createRenderer3D(container) {
+export function createRenderer3D(container, options = {}) {
   if (!container) {
     throw new Error("Missing board viewport element");
   }
@@ -250,6 +309,12 @@ export function createRenderer3D(container) {
   controls.minDistance = 3;
   controls.maxDistance = 25;
 
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let latestSnapshot = null;
+  let hoveredCellKey = "";
+  let hoveredWallSlotKey = "";
+
   const ambientLight = new THREE.AmbientLight("#f0e5cf", 0.55);
   scene.add(ambientLight);
 
@@ -268,7 +333,8 @@ export function createRenderer3D(container) {
   keyLight.shadow.mapSize.height = 2048;
   scene.add(keyLight);
 
-  const boardGroup = createBoardGroup();
+  const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
+    createBoardGroup();
   scene.add(boardGroup);
   const placedWallGroup = new THREE.Group();
   scene.add(placedWallGroup);
@@ -276,6 +342,27 @@ export function createRenderer3D(container) {
   scene.add(reserveWallGroup);
   const pawnGroup = new THREE.Group();
   scene.add(pawnGroup);
+  const hoverCell = new THREE.Mesh(
+    new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.05, CELL_SIZE * 0.92),
+    new THREE.MeshStandardMaterial({
+      color: "#efe28a",
+      transparent: true,
+      opacity: 0.55,
+    }),
+  );
+  hoverCell.visible = false;
+  scene.add(hoverCell);
+  const hoverWall = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
+    new THREE.MeshStandardMaterial({
+      color: "#79d6b8",
+      transparent: true,
+      opacity: 0.65,
+    }),
+  );
+  hoverWall.visible = false;
+  // hoverWall.position.set(1, 1, 1)
+  scene.add(hoverWall);
 
   function resizeRenderer() {
     const width = container.clientWidth;
@@ -294,6 +381,113 @@ export function createRenderer3D(container) {
   });
   resizeObserver.observe(container);
 
+  function notifyHover(cell) {
+    if (options.onHoverCell) {
+      options.onHoverCell(cell);
+    }
+  }
+
+  function notifyWallHover(wallSlot) {
+    if (options.onHoverWallSlot) {
+      options.onHoverWallSlot(wallSlot);
+    }
+  }
+
+  function setHoveredCell(cell) {
+    const cellKey = cell ? `${cell.row}-${cell.col}` : "";
+    if (cellKey == hoveredCellKey) {
+      return;
+    }
+
+    hoveredCellKey = cellKey;
+
+    if (!cell) {
+      hoverCell.visible = false;
+      notifyHover(null);
+      return;
+    }
+
+    hoverCell.visible = true;
+    hoverCell.position.set(
+      getCellCenter(cell.col),
+      CELL_HEIGHT + CELL_HEIGHT / 2,
+      getCellCenter(cell.row),
+    );
+    notifyHover(cell);
+  }
+
+  function setHoveredWallSlot(wallSlot) {
+    const previewWallSlot =
+      wallSlot &&
+      ((wallSlot.axis == "horizontal" && wallSlot.col < BOARD_SIZE - 1) ||
+        (wallSlot.axis == "vertical" && wallSlot.row < BOARD_SIZE - 1))
+        ? wallSlot
+        : null;
+    const wallSlotKey = previewWallSlot
+      ? `${previewWallSlot.axis}-${previewWallSlot.row}-${previewWallSlot.col}`
+      : "";
+
+    if (wallSlotKey == hoveredWallSlotKey) {
+      return;
+    }
+
+    hoveredWallSlotKey = wallSlotKey;
+
+    if (!previewWallSlot) {
+      hoverWall.visible = false;
+      notifyWallHover(null);
+      return;
+    }
+
+    hoverWall.visible = true;
+    hoverWall.geometry.dispose();
+    hoverWall.geometry = new THREE.BoxGeometry(
+      previewWallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
+      WALL_HEIGHT,
+      previewWallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
+    );
+    hoverWall.position.set(
+      getLaneCenter(previewWallSlot.col),
+      CELL_HEIGHT + WALL_HEIGHT / 2,
+      getLaneCenter(previewWallSlot.row),
+    );
+    notifyWallHover(previewWallSlot);
+  }
+
+  function updateHoveredCell(clientX, clientY) {
+    if (!latestSnapshot) {
+      setHoveredCell(null);
+      setHoveredWallSlot(null);
+      return;
+    }
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+    const wallSlotIntersections = raycaster.intersectObjects(
+      [...horizontalSlotMeshes, ...verticalSlotMeshes],
+      false,
+    );
+    const wallSlot =
+      wallSlotIntersections[0]?.object?.userData?.wallSlot ?? null;
+    setHoveredWallSlot(wallSlot);
+
+    const intersections = raycaster.intersectObjects(cellMeshes, false);
+    const cell = intersections[0]?.object?.userData?.cell ?? null;
+    setHoveredCell(cell);
+  }
+
+  renderer.domElement.addEventListener("pointermove", (event) => {
+    updateHoveredCell(event.clientX, event.clientY);
+  });
+
+  renderer.domElement.addEventListener("pointerleave", () => {
+    setHoveredCell(null);
+    setHoveredWallSlot(null);
+  });
+
   const clock = new THREE.Clock();
   let animationFrameId = 0;
 
@@ -306,8 +500,17 @@ export function createRenderer3D(container) {
 
   function render(snapshot, options = {}) {
     if (!snapshot) {
+      latestSnapshot = null;
+      setHoveredCell(null);
+      setHoveredWallSlot(null);
       return;
     }
+
+    latestSnapshot = snapshot;
+
+    clearGroup(pawnGroup);
+    clearGroup(placedWallGroup);
+    clearGroup(reserveWallGroup);
 
     for (const player of snapshot.players) {
       const mesh = createPawnMesh(player.id);
