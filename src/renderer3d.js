@@ -92,14 +92,19 @@ function createPlacedWallMesh(axis, wall) {
   return mesh;
 }
 
-function createReserveWallMesh() {
+function createReserveWallMesh(reserveWallKey, isSelected = false) {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, WALL_SPAN),
-    BOARD_MATERIALS.wall,
+    new THREE.MeshStandardMaterial({
+      color: isSelected ? "#f08d49" : "#c89352",
+      transparent: isSelected,
+      opacity: isSelected ? 0.9 : 1,
+    }),
   );
 
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  mesh.userData.reserveWallKey = reserveWallKey;
 
   return mesh;
 }
@@ -316,6 +321,7 @@ export function createRenderer3D(container, options = {}) {
   let hoveredWallSlotKey = "";
   let selectedCellKey = "";
   let selectedWallSlotKey = "";
+  let selectedReserveWallKey = "";
 
   const ambientLight = new THREE.AmbientLight("#f0e5cf", 0.55);
   scene.add(ambientLight);
@@ -385,6 +391,15 @@ export function createRenderer3D(container, options = {}) {
   selectedWall.visible = false;
   scene.add(selectedWall);
 
+  function syncReserveWallSelection() {
+    for (const mesh of reserveWallGroup.children) {
+      const isSelected = mesh.userData.reserveWallKey == selectedReserveWallKey;
+      mesh.material.color.set(isSelected ? "#f08d49" : "#c89352");
+      mesh.material.transparent = isSelected;
+      mesh.material.opacity = isSelected ? 0.9 : 1;
+    }
+  }
+
   function resizeRenderer() {
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -411,6 +426,12 @@ export function createRenderer3D(container, options = {}) {
   function notifySelectCell(cell) {
     if (options.onSelectCell) {
       options.onSelectCell(cell);
+    }
+  }
+
+  function notifySelectReserveWall(reserveWall) {
+    if (options.onSelectReserveWall) {
+      options.onSelectReserveWall(reserveWall);
     }
   }
 
@@ -511,6 +532,13 @@ export function createRenderer3D(container, options = {}) {
   }
 
   function setSelectedWallSlot(wallSlot) {
+    if (!selectedReserveWallKey) {
+      selectedWall.visible = false;
+      selectedWallSlotKey = "";
+      notifySelectWallSlot(null);
+      return;
+    }
+
     const previewWallSlot =
       wallSlot &&
       ((wallSlot.axis == "horizontal" && wallSlot.col < BOARD_SIZE - 1) ||
@@ -547,6 +575,23 @@ export function createRenderer3D(container, options = {}) {
     notifySelectWallSlot(previewWallSlot);
   }
 
+  function setSelectedReserveWall(reserveWallKey) {
+    if (reserveWallKey == selectedReserveWallKey) {
+      return;
+    }
+
+    selectedReserveWallKey = reserveWallKey ?? "";
+    syncReserveWallSelection();
+
+    if (!selectedReserveWallKey) {
+      setSelectedWallSlot(null);
+      notifySelectReserveWall(null);
+      return;
+    }
+
+    notifySelectReserveWall({ key: selectedReserveWallKey });
+  }
+
   function updateHoveredCell(clientX, clientY) {
     if (!latestSnapshot) {
       setHoveredCell(null);
@@ -580,6 +625,7 @@ export function createRenderer3D(container, options = {}) {
     if (!latestSnapshot) {
       setSelectedCell(null);
       setSelectedWallSlot(null);
+      setSelectedReserveWall(null);
       return;
     }
 
@@ -588,6 +634,17 @@ export function createRenderer3D(container, options = {}) {
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycaster.setFromCamera(pointer, camera);
+    const reserveWallIntersections = raycaster.intersectObjects(
+      reserveWallGroup.children,
+      false,
+    );
+    const reserveWallKey =
+      reserveWallIntersections[0]?.object?.userData?.reserveWallKey ?? null;
+    if (reserveWallKey) {
+      setSelectedReserveWall(reserveWallKey);
+      return;
+    }
+
     const wallSlotIntersections = raycaster.intersectObjects(
       [...horizontalSlotMeshes, ...verticalSlotMeshes],
       false,
@@ -630,6 +687,8 @@ export function createRenderer3D(container, options = {}) {
     clearGroup(placedWallGroup);
     clearGroup(reserveWallGroup);
 
+    const validReserveWallKeys = new Set();
+
     for (const player of snapshot.players) {
       const mesh = createPawnMesh(player.id);
       const position = getPawnPosition(player);
@@ -654,11 +713,23 @@ export function createRenderer3D(container, options = {}) {
     // Unplaced Walls
     for (const player of snapshot.players) {
       for (let i = 0; i < player.wallsRemaining; i++) {
-        const mesh = createReserveWallMesh();
+        const reserveWallKey = `player-${player.id}-wall-${i}`;
+        validReserveWallKeys.add(reserveWallKey);
+        const mesh = createReserveWallMesh(
+          reserveWallKey,
+          reserveWallKey == selectedReserveWallKey,
+        );
         const position = getReserveWallPosition(player.id, i);
         mesh.position.set(position.x, position.y, position.z);
         reserveWallGroup.add(mesh);
       }
+    }
+
+    if (
+      selectedReserveWallKey &&
+      !validReserveWallKeys.has(selectedReserveWallKey)
+    ) {
+      setSelectedReserveWall(null);
     }
   }
 
