@@ -105,7 +105,7 @@ private:
 	void NextAdjacent();
 	void NextJumping();
 
-	bool straight_jump = false, jumping = false;
+	bool straight_jump = false, jumping = false, will_jump = false;
 	const PawnMoveList* move_list;
 	AdjacentMoveList::Iterator current;
 };

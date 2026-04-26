@@ -61,16 +61,17 @@ void PawnMoveList::Iterator::NextAdjacent() {
 			ret = grid_pos;
 			return;
 		}
-		jumping = true;
+		will_jump = true;
 		GridPosition vector = move_list->other - move_list->player;
 		GridPosition jump = move_list->other + vector;
 		if (std::ranges::find(move_list->jump_moves, jump) != move_list->jump_moves.end()) {
 			straight_jump = true;
 		}
 	}
-	if (!jumping) {
+	if (!will_jump) {
 		done = true;
-	} else {
+	} else if (will_jump && current == move_list->adjacent.end()) {
+		jumping = true;
 		current = move_list->jump_moves.begin();
 		NextJumping();
 	}
