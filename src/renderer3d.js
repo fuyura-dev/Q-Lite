@@ -464,6 +464,35 @@ export function createRenderer3D(container, options = {}) {
     }
   }
 
+  function getCurrentPlayer(snapshot) {
+    return (
+      snapshot.players.find((player) => player.id == snapshot.currentTurn) ??
+      null
+    );
+  }
+
+  function getClickableMoveTarget(cell) {
+    if (!latestSnapshot || !cell) {
+      return null;
+    }
+
+    const currentPlayer = getCurrentPlayer(latestSnapshot);
+    const canShowMoveTargets =
+      currentPlayer &&
+      selectedCellKey == `${currentPlayer.row}-${currentPlayer.col}`;
+
+    if (!canShowMoveTargets) {
+      return null;
+    }
+
+    return (
+      latestSnapshot.legalPawnMoves?.find(
+        (moveTarget) =>
+          moveTarget.row == cell.row && moveTarget.col == cell.col,
+      ) ?? null
+    );
+  }
+
   function setHoveredCell(cell) {
     const cellKey = cell ? `${cell.row}-${cell.col}` : "";
     if (cellKey == hoveredCellKey) {
@@ -771,6 +800,13 @@ export function createRenderer3D(container, options = {}) {
 
     const intersections = raycaster.intersectObjects(cellMeshes, false);
     const cell = intersections[0]?.object?.userData?.cell ?? null;
+
+    const cellMoveTarget = getClickableMoveTarget(cell);
+    if (cellMoveTarget) {
+      notifySelectMoveTarget(cellMoveTarget);
+      return;
+    }
+
     setSelectedCell(cell);
   });
 
@@ -854,9 +890,7 @@ export function createRenderer3D(container, options = {}) {
       setSelectedReserveWall(null);
     }
 
-    const currentPlayer =
-      snapshot.players.find((player) => player.id == snapshot.currentTurn) ??
-      null;
+    const currentPlayer = getCurrentPlayer(snapshot);
     const canShowMoveTargets =
       currentPlayer &&
       selectedCellKey == `${currentPlayer.row}-${currentPlayer.col}`;
