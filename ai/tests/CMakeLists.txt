@@ -4,7 +4,7 @@ add_executable(BFS BFS.cpp)
 add_executable(Engine Engine.cpp)
 add_executable(MoveGen MoveGen.cpp)
 
-set_target_properties(BFS Engine PROPERTIES FOLDER "Tests")
+set_target_properties(BFS Engine MoveGen PROPERTIES FOLDER "Tests")
 target_link_libraries(BFS PRIVATE q-liteengine GTest::gtest_main)
 target_link_libraries(Engine PRIVATE q-liteengine GTest::gtest_main)
 target_link_libraries(MoveGen PRIVATE q-liteengine GTest::gtest_main)

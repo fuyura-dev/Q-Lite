@@ -6,7 +6,7 @@ struct Bounds {
 	Score alpha, beta;
 };
 
-constexpr auto kMaxDepth = 5;
+constexpr auto kMaxDepth = 7;
 constexpr Bounds kInitialBounds = {
 	.alpha = std::numeric_limits<Score>::min(),
 	.beta = std::numeric_limits<Score>::max()
