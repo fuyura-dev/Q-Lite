@@ -17,6 +17,7 @@ public:
 	int GetRemainingWalls(int player) const;
 	std::vector<GridPosition> GetHorizontalWalls() const;
 	std::vector<GridPosition> GetVerticalWalls() const;
+	std::vector<GridPosition> GetLegalPawnMoves() const;
 
 	void Reset();
 

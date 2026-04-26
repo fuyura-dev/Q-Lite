@@ -13,6 +13,7 @@ EMSCRIPTEN_BINDINGS(engine) {
         .function("getPlayerRow", &Engine::GetPlayerRow)
         .function("getPlayerCol", &Engine::GetPlayerCol)
         .function("getRemainingWalls", &Engine::GetRemainingWalls)
+        .function("getLegalPawnMoves", &Engine::GetLegalPawnMoves)
 		.function("placeWall", &Engine::PlaceWall)
 		.function("movePawn", &Engine::MovePawn)
 		.function("doBestMove", &Engine::DoBestMove)

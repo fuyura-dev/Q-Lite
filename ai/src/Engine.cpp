@@ -46,6 +46,14 @@ std::vector<GridPosition> Engine::GetVerticalWalls() const {
     return walls;
 }
 
+std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
+    std::vector<GridPosition> moves;
+    for (GridPosition move : PawnMoveList(pos)) {
+        moves.push_back(move);
+    }
+    return moves;
+}
+
 void Engine::Reset() {
     pos = Position();
 }
