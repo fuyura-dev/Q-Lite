@@ -18,6 +18,7 @@ public:
 	std::vector<GridPosition> GetHorizontalWalls() const;
 	std::vector<GridPosition> GetVerticalWalls() const;
 	std::vector<GridPosition> GetLegalPawnMoves() const;
+	int Evaluate() const;
 
 	void Reset();
 

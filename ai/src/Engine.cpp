@@ -54,6 +54,10 @@ std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
     return moves;
 }
 
+int Engine::Evaluate() const {
+    return pos.Evaluate();
+}
+
 void Engine::Reset() {
     pos = Position();
 }

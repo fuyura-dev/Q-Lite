@@ -23,6 +23,7 @@ let selectedReserveWallLabel = "Selected Reserve Wall: none";
 let selectedReserveWall = null;
 let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
+let evaluation = 0;
 
 const USE_MOCK = false;
 
@@ -64,7 +65,7 @@ const MOCK_SNAPSHOT = {
 };
 
 function updateDevInfo() {
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}`;
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}<br>Evaluation: ${evaluation}`;
 }
 
 function getWallSide(axis) {
@@ -225,6 +226,7 @@ function createEngineSnapshot() {
     horizontalWalls: arrayify(engine.getHorizontalWalls()),
     verticalWalls: arrayify(engine.getVerticalWalls()),
     legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
+    evaluation: engine.evaluate()
   };
 }
 
@@ -251,6 +253,7 @@ function updateStatus(snapshot) {
   infoPlayerTwoWalls.textContent = playerTwo
     ? `${playerTwo.wallsRemaining}`
     : "-";
+  evaluation = snapshot ? snapshot.evaluation : 0
   updateDevInfo();
 }
 

@@ -18,6 +18,7 @@ EMSCRIPTEN_BINDINGS(engine) {
 		.function("movePawn", &Engine::MovePawn)
 		.function("doBestMove", &Engine::DoBestMove)
 		.function("reset", &Engine::Reset)
+		.function("evaluate", &Engine::Evaluate)
         ;
 
     value_object<GridPosition>("gridPosition")
