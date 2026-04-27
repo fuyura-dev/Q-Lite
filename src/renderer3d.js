@@ -1,40 +1,30 @@
 import * as THREE from "three";
 import { createSceneBundle } from "./renderer3d/scene";
-
-const BOARD_SIZE = 7;
-const CELL_SIZE = 0.9;
-const CELL_HEIGHT = 0.12;
-const LANE_SIZE = 0.2;
-const BOARD_WORLD_SIZE = BOARD_SIZE * CELL_SIZE + (BOARD_SIZE - 1) * LANE_SIZE;
-const HALF_BOARD = BOARD_WORLD_SIZE / 2;
-const WALL_SPAN = CELL_SIZE * 2 + LANE_SIZE;
-const WALL_THICKNESS = LANE_SIZE * 0.8;
-const WALL_HEIGHT = 0.7;
-const BOARD_DEPTH = BOARD_WORLD_SIZE + WALL_SPAN * 2;
-const HALF_DEPTH = BOARD_DEPTH / 2;
-
-const BOARD_MATERIALS = {
-  frame: new THREE.MeshStandardMaterial({ color: "#714d31" }),
-  top: new THREE.MeshStandardMaterial({ color: "#9a7149" }),
-  cell: new THREE.MeshStandardMaterial({ color: "#d9bb87" }),
-  lane: new THREE.MeshStandardMaterial({ color: "#4b3423" }),
-  wall: new THREE.MeshStandardMaterial({ color: "#c89352" }),
-  pawnOne: new THREE.MeshStandardMaterial({ color: "#d6d6d6" }),
-  pawnTwo: new THREE.MeshStandardMaterial({ color: "#5a5a5a" }),
-};
-
-function clearGroup(group) {
-  group.clear();
-}
-
-function getCellCenter(index) {
-  const offset = HALF_BOARD - CELL_SIZE / 2;
-  return -offset + index * (CELL_SIZE + LANE_SIZE);
-}
-
-function getLaneCenter(index) {
-  return getCellCenter(index) + (CELL_SIZE + LANE_SIZE) / 2;
-}
+import {
+  clearGroup,
+  getCellCenter,
+  getLaneCenter,
+  createPlacedWallMesh,
+  createReserveWallMesh,
+  createPawnMesh,
+  createHoverCellMesh,
+  createSelectedCellMesh,
+  createHoverWallMesh,
+  createSelectedWallMesh,
+  updateWallPreviewMesh,
+  createMoveTargetMesh,
+} from "./renderer3d/meshes";
+import {
+  BOARD_MATERIALS,
+  BOARD_SIZE,
+  CELL_SIZE,
+  LANE_SIZE,
+  CELL_HEIGHT,
+  BOARD_WORLD_SIZE,
+  BOARD_DEPTH,
+  HALF_BOARD,
+  WALL_HEIGHT,
+} from "./renderer3d/constants";
 
 function mergeWallSegments(segments, axis) {
   const grouped = new Map();
@@ -68,60 +58,6 @@ function mergeWallSegments(segments, axis) {
   }
 
   return mergedWalls;
-}
-
-function createPlacedWallMesh(axis, wall) {
-  const isHorizontal = axis == "horizontal";
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      isHorizontal ? WALL_SPAN : WALL_THICKNESS,
-      WALL_HEIGHT,
-      isHorizontal ? WALL_THICKNESS : WALL_SPAN,
-    ),
-    BOARD_MATERIALS.wall,
-  );
-
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.position.set(
-    isHorizontal ? getLaneCenter(wall.col) : getLaneCenter(wall.col),
-    CELL_HEIGHT + WALL_HEIGHT / 2,
-    isHorizontal ? getLaneCenter(wall.row) : getLaneCenter(wall.row),
-  );
-
-  return mesh;
-}
-
-function createReserveWallMesh(reserveWallKey, isSelected = false) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, WALL_SPAN),
-    new THREE.MeshStandardMaterial({
-      color: isSelected ? "#f08d49" : "#c89352",
-      transparent: isSelected,
-      opacity: isSelected ? 0.9 : 1,
-    }),
-  );
-
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.userData.reserveWallKey = reserveWallKey;
-
-  return mesh;
-}
-
-function createPawnMesh(playerId) {
-  const pawnGroup = new THREE.Group();
-
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.18, 0.3, 0.5, 24),
-    playerId == 1 ? BOARD_MATERIALS.pawnOne : BOARD_MATERIALS.pawnTwo,
-  );
-  body.castShadow = true;
-  body.receiveShadow = true;
-  body.position.y = 0.3;
-  pawnGroup.add(body);
-
-  return pawnGroup;
 }
 
 function getPawnPosition(player) {
@@ -320,45 +256,13 @@ export function createRenderer3D(container, options = {}) {
   scene.add(pawnGroup);
   const moveTargetGroup = new THREE.Group();
   scene.add(moveTargetGroup);
-  const hoverCell = new THREE.Mesh(
-    new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.05, CELL_SIZE * 0.92),
-    new THREE.MeshStandardMaterial({
-      color: "#efe28a",
-      transparent: true,
-      opacity: 0.55,
-    }),
-  );
-  hoverCell.visible = false;
+  const hoverCell = createHoverCellMesh();
   scene.add(hoverCell);
-  const selectedCell = new THREE.Mesh(
-    new THREE.BoxGeometry(CELL_SIZE * 0.82, 0.07, CELL_SIZE * 0.82),
-    new THREE.MeshStandardMaterial({
-      color: "#d98f39",
-      transparent: true,
-      opacity: 0.72,
-    }),
-  );
-  selectedCell.visible = false;
+  const selectedCell = createSelectedCellMesh();
   scene.add(selectedCell);
-  const hoverWall = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
-    new THREE.MeshStandardMaterial({
-      color: "#79d6b8",
-      transparent: true,
-      opacity: 0.65,
-    }),
-  );
-  hoverWall.visible = false;
+  const hoverWall = createHoverWallMesh();
   scene.add(hoverWall);
-  const selectedWall = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
-    new THREE.MeshStandardMaterial({
-      color: "#f08d49",
-      transparent: true,
-      opacity: 0.82,
-    }),
-  );
-  selectedWall.visible = false;
+  const selectedWall = createSelectedWallMesh();
   scene.add(selectedWall);
 
   function rerenderSnapshot() {
@@ -530,17 +434,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     hoverWall.visible = true;
-    hoverWall.geometry.dispose();
-    hoverWall.geometry = new THREE.BoxGeometry(
-      previewWallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
-      WALL_HEIGHT,
-      previewWallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
-    );
-    hoverWall.position.set(
-      getLaneCenter(previewWallSlot.col),
-      CELL_HEIGHT + WALL_HEIGHT / 2,
-      getLaneCenter(previewWallSlot.row),
-    );
+    updateWallPreviewMesh(hoverWall, previewWallSlot);
     notifyWallHover(previewWallSlot);
   }
 
@@ -574,17 +468,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     selectedWall.visible = true;
-    selectedWall.geometry.dispose();
-    selectedWall.geometry = new THREE.BoxGeometry(
-      previewWallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
-      WALL_HEIGHT,
-      previewWallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
-    );
-    selectedWall.position.set(
-      getLaneCenter(previewWallSlot.col),
-      CELL_HEIGHT + WALL_HEIGHT / 2,
-      getLaneCenter(previewWallSlot.row),
-    );
+    updateWallPreviewMesh(selectedWall, previewWallSlot);
     notifySelectWallSlot(previewWallSlot);
   }
 
@@ -862,23 +746,7 @@ export function createRenderer3D(container, options = {}) {
 
     if (canShowMoveTargets) {
       for (const moveTarget of snapshot.legalPawnMoves ?? []) {
-        const mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.18, 0.18, 0.06, 24),
-          new THREE.MeshStandardMaterial({
-            color: "#4bb978",
-            transparent: true,
-            opacity: 0.85,
-          }),
-        );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData.moveTarget = moveTarget;
-        mesh.position.set(
-          getCellCenter(moveTarget.col),
-          CELL_HEIGHT + 0.08,
-          getCellCenter(moveTarget.row),
-        );
-        moveTargetGroup.add(mesh);
+        moveTargetGroup.add(createMoveTargetMesh(moveTarget));
       }
     }
   }
