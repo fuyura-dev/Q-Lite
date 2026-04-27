@@ -45,6 +45,7 @@ export function createRenderer3D(container, options = {}) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let latestSnapshot = null;
+  let latestRenderOptions = {};
   let hoveredCellKey = "";
   let hoveredWallSlotKey = "";
   let selectedCellKey = "";
@@ -52,30 +53,45 @@ export function createRenderer3D(container, options = {}) {
   let selectedReserveWallKey = "";
   const reserveWallStore = createReserveWallStore();
 
+  const worldGroup = new THREE.Group();
+  scene.add(worldGroup);
+
   const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
     createBoardGroup();
-  scene.add(boardGroup);
+  worldGroup.add(boardGroup);
   const placedWallGroup = new THREE.Group();
-  scene.add(placedWallGroup);
+  worldGroup.add(placedWallGroup);
   const reserveWallGroup = new THREE.Group();
-  scene.add(reserveWallGroup);
+  worldGroup.add(reserveWallGroup);
   const pawnGroup = new THREE.Group();
-  scene.add(pawnGroup);
+  worldGroup.add(pawnGroup);
   const moveTargetGroup = new THREE.Group();
-  scene.add(moveTargetGroup);
+  worldGroup.add(moveTargetGroup);
   const hoverCell = createHoverCellMesh();
-  scene.add(hoverCell);
+  worldGroup.add(hoverCell);
   const selectedCell = createSelectedCellMesh();
-  scene.add(selectedCell);
+  worldGroup.add(selectedCell);
   const hoverWall = createHoverWallMesh();
-  scene.add(hoverWall);
+  worldGroup.add(hoverWall);
   const selectedWall = createSelectedWallMesh();
-  scene.add(selectedWall);
+  worldGroup.add(selectedWall);
 
   function rerenderSnapshot() {
     if (latestSnapshot) {
-      render(latestSnapshot);
+      render(latestSnapshot, latestRenderOptions);
     }
+  }
+
+  function getTargetBoardRotation(snapshot, renderOptions) {
+    if (!snapshot) {
+      return 0;
+    }
+
+    if (renderOptions.mode !== "human-vs-human") {
+      return 0;
+    }
+
+    return snapshot.currentTurn == 2 ? Math.PI : 0;
   }
 
   function resizeRenderer() {
@@ -397,6 +413,11 @@ export function createRenderer3D(container, options = {}) {
   function animate() {
     animationFrameId = window.requestAnimationFrame(animate);
     controls.update(clock.getDelta());
+    const targetRotation = getTargetBoardRotation(
+      latestSnapshot,
+      latestRenderOptions,
+    );
+    worldGroup.rotation.y += (targetRotation - worldGroup.rotation.y) * 0.05;
     renderer.render(scene, camera);
   }
   animate();
@@ -410,6 +431,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     latestSnapshot = snapshot;
+    latestRenderOptions = options;
     reserveWallStore.sync(snapshot);
 
     clearGroup(pawnGroup);
