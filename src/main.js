@@ -24,6 +24,7 @@ let selectedReserveWall = null;
 let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
+let aiTurnInProgress = false;
 
 const USE_MOCK = false;
 
@@ -74,7 +75,62 @@ function getWallSide(axis) {
     : engine.wallSide.RIGHT_SIDE;
 }
 
-function tryPlaceSelectedWall(wallSlot) {
+function isHumanVsAiMode() {
+  return modeSelect?.value == "human-vs-ai";
+}
+
+function getWinner(snapshot) {
+  if (!snapshot) {
+    return null;
+  }
+
+  const playerOne = snapshot.players?.[0];
+  const playerTwo = snapshot.players?.[1];
+
+  if (playerOne?.row == 0) {
+    return 1;
+  }
+
+  if (playerTwo?.row == snapshot.boardSize - 1) {
+    return 2;
+  }
+
+  return null;
+}
+
+function isGameOver(snapshot) {
+  return getWinner(snapshot) !== null;
+}
+
+function isAiTurn(snapshot) {
+  return isHumanVsAiMode() && snapshot?.currentTurn == 2;
+}
+
+async function maybeRunAiTurn() {
+  if (USE_MOCK || !engine || aiTurnInProgress) {
+    return;
+  }
+
+  const snapshot = getSnapshot();
+  if (!isAiTurn(snapshot) || isGameOver(snapshot)) {
+    return;
+  }
+
+  aiTurnInProgress = true;
+  actionStatusLabel = "Action: AI thinking...";
+  refresh();
+
+  await new Promise((res) => window.setTimeout(res, 150));
+
+  engine.doBestMove();
+  aiTurnInProgress = false;
+  actionStatusLabel = "Action: AI completed its move";
+  renderer.clearMoveSelection();
+  renderer.clearWallPlacementSelection();
+  refresh();
+}
+
+async function tryPlaceSelectedWall(wallSlot) {
   if (!wallSlot || !selectedReserveWall) {
     return;
   }
@@ -110,9 +166,10 @@ function tryPlaceSelectedWall(wallSlot) {
   selectedWallLabel = "Selected Wall: none";
   renderer.clearWallPlacementSelection();
   refresh();
+  await maybeRunAiTurn();
 }
 
-function tryMovePawn(moveTarget) {
+async function tryMovePawn(moveTarget) {
   if (!moveTarget) {
     return;
   }
@@ -146,6 +203,10 @@ function tryMovePawn(moveTarget) {
   selectedMoveTargetLabel = "Selected Move Target: none";
   renderer.clearMoveSelection();
   refresh();
+
+  if (result !== engine.moveResult.WIN) {
+    await maybeRunAiTurn();
+  }
 }
 
 const renderer = createRenderer3D(boardViewport, {
@@ -226,7 +287,7 @@ function createEngineSnapshot() {
     horizontalWalls: arrayify(engine.getHorizontalWalls()),
     verticalWalls: arrayify(engine.getVerticalWalls()),
     legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
-    evaluation: engine.evaluate()
+    evaluation: engine.evaluate(),
   };
 }
 
@@ -240,10 +301,25 @@ function updateStatus(snapshot) {
     modeSelect.value === "human-vs-ai" ? "Human vs AI" : "Human vs Human";
   const playerOne = snapshot?.players?.[0];
   const playerTwo = snapshot?.players?.[1];
+  const winner = getWinner(snapshot);
 
-  statusText.textContent = snapshot
-    ? `Renderer ready. Current setup: ${modeLabel}`
-    : engineStatus;
+  let statusTextMessage;
+
+  if (!snapshot) {
+    statusTextMessage = engineStatus;
+  } else {
+    const setup = `Current Setup: ${modeLabel}`;
+
+    if (winner) {
+      statusTextMessage = `Player ${winner} wins. ${setup}`;
+    } else if (aiTurnInProgress) {
+      statusTextMessage = `AI is thinking. ${setup}`;
+    } else {
+      statusTextMessage = `Renderer ready. ${setup}`;
+    }
+  }
+
+  statusText.textContent = statusTextMessage;
   infoCurrentTurn.textContent = snapshot
     ? `Player ${snapshot.currentTurn}`
     : "Unavailable";
@@ -253,7 +329,7 @@ function updateStatus(snapshot) {
   infoPlayerTwoWalls.textContent = playerTwo
     ? `${playerTwo.wallsRemaining}`
     : "-";
-  evaluation = snapshot ? snapshot.evaluation : 0
+  evaluation = snapshot ? snapshot.evaluation : 0;
   updateDevInfo();
 }
 
@@ -282,12 +358,14 @@ async function initializeEngine() {
 
 modeSelect?.addEventListener("change", () => {
   refresh();
+  void maybeRunAiTurn();
 });
 
 restartButton?.addEventListener("click", () => {
   if (engine) {
     engine.reset();
   }
+  aiTurnInProgress = false;
   refresh();
 });
 
