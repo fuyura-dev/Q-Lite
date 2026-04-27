@@ -25,7 +25,7 @@ let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
 let aiTurnInProgress = false;
-let buildTime = ""
+let buildTime = "";
 
 const USE_MOCK = false;
 
@@ -107,6 +107,13 @@ function isAiTurn(snapshot) {
   return isHumanVsAiMode() && snapshot?.currentTurn == 2;
 }
 
+function blockInteraction(message) {
+  actionStatusLabel = message;
+  renderer.clearMoveSelection();
+  renderer.clearWallPlacementSelection();
+  updateDevInfo();
+}
+
 async function maybeRunAiTurn() {
   if (USE_MOCK || !engine || aiTurnInProgress) {
     return;
@@ -133,6 +140,11 @@ async function maybeRunAiTurn() {
 
 async function tryPlaceSelectedWall(wallSlot) {
   if (!wallSlot || !selectedReserveWall) {
+    return;
+  }
+
+  if (isGameOver(getSnapshot())) {
+    blockInteraction("Action: game over, press restart");
     return;
   }
 
@@ -172,6 +184,11 @@ async function tryPlaceSelectedWall(wallSlot) {
 
 async function tryMovePawn(moveTarget) {
   if (!moveTarget) {
+    return;
+  }
+
+  if (isGameOver(getSnapshot())) {
+    blockInteraction("Action: game over, press restart");
     return;
   }
 
@@ -289,7 +306,7 @@ function createEngineSnapshot() {
     verticalWalls: arrayify(engine.getVerticalWalls()),
     legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
     evaluation: engine.evaluate(),
-    buildTime: engine.buildTime()
+    // buildTime: engine.buildTime(),
   };
 }
 
@@ -323,7 +340,9 @@ function updateStatus(snapshot) {
 
   statusText.textContent = statusTextMessage;
   infoCurrentTurn.textContent = snapshot
-    ? `Player ${snapshot.currentTurn}`
+    ? winner
+      ? `Player ${winner} won`
+      : `Player ${snapshot.currentTurn}`
     : "Unavailable";
   infoPlayerOneWalls.textContent = playerOne
     ? `${playerOne.wallsRemaining}`
@@ -370,6 +389,14 @@ restartButton?.addEventListener("click", () => {
     engine.reset();
   }
   aiTurnInProgress = false;
+  actionStatusLabel = "Action: game restarted";
+  selectedMoveTargetLabel = "Selected Move Target: none";
+  selectedWallLabel = "Selected Wall: none";
+  selectedReserveWallLabel = "Selected Reserve Wall: none";
+  selectedCellLabel = "Selected Cell: none";
+  selectedReserveWall = null;
+  renderer.clearMoveSelection();
+  renderer.clearWallPlacementSelection();
   refresh();
 });
 
