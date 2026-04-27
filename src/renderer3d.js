@@ -32,6 +32,7 @@ import {
   HALF_BOARD,
   WALL_HEIGHT,
 } from "./renderer3d/constants";
+import { createReserveWallStore } from "./renderer3d/reserveWalls";
 
 export function createRenderer3D(container, options = {}) {
   if (!container) {
@@ -49,9 +50,7 @@ export function createRenderer3D(container, options = {}) {
   let selectedCellKey = "";
   let selectedWallSlotKey = "";
   let selectedReserveWallKey = "";
-  const reserveWallSlotsByPlayer = new Map();
-  const reserveWallIdCounters = new Map();
-  let pendingPlacedReserveWallKey = "";
+  const reserveWallStore = createReserveWallStore();
 
   const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
     createBoardGroup();
@@ -76,15 +75,6 @@ export function createRenderer3D(container, options = {}) {
   function rerenderSnapshot() {
     if (latestSnapshot) {
       render(latestSnapshot);
-    }
-  }
-
-  function syncReserveWallSelection() {
-    for (const mesh of reserveWallGroup.children) {
-      const isSelected = mesh.userData.reserveWallKey == selectedReserveWallKey;
-      mesh.material.color.set(isSelected ? "#f08d49" : "#c89352");
-      mesh.material.transparent = isSelected;
-      mesh.material.opacity = isSelected ? 0.9 : 1;
     }
   }
 
@@ -286,7 +276,6 @@ export function createRenderer3D(container, options = {}) {
     }
 
     selectedReserveWallKey = reserveWallKey ?? "";
-    syncReserveWallSelection();
 
     if (!selectedReserveWallKey) {
       setSelectedWallSlot(null);
@@ -299,83 +288,13 @@ export function createRenderer3D(container, options = {}) {
     rerenderSnapshot();
   }
 
-  function ensureReserveWallKeys(playerId, count) {
-    if (!reserveWallSlotsByPlayer.has(playerId)) {
-      reserveWallSlotsByPlayer.set(playerId, []);
-      reserveWallIdCounters.set(playerId, 0);
-    }
-
-    const slots = reserveWallSlotsByPlayer.get(playerId);
-    let nextId = reserveWallIdCounters.get(playerId);
-    const filledCount = slots.filter(Boolean).length;
-
-    while (slots.length < getReserveWallSlots().length) {
-      slots.push(null);
-    }
-
-    for (
-      let i = 0;
-      i < slots.length &&
-      filledCount + (nextId - reserveWallIdCounters.get(playerId)) < count;
-      i++
-    ) {
-      if (slots[i]) {
-        continue;
-      }
-      slots[i] = `player-${playerId}-wall-${nextId}`;
-      nextId++;
-    }
-
-    reserveWallIdCounters.set(playerId, nextId);
-  }
-
-  function syncReserveWalls(snapshot) {
-    const activePlayerIds = new Set(
-      snapshot.players.map((player) => player.id),
-    );
-
-    for (const player of snapshot.players) {
-      ensureReserveWallKeys(player.id, player.wallsRemaining);
-      const slots = reserveWallSlotsByPlayer.get(player.id);
-      const targetCount = player.wallsRemaining;
-      let filledCount = slots.filter(Boolean).length;
-
-      while (filledCount > targetCount) {
-        const selectedIndex = pendingPlacedReserveWallKey
-          ? slots.indexOf(pendingPlacedReserveWallKey)
-          : -1;
-
-        if (selectedIndex >= 0) {
-          slots[selectedIndex] = null;
-          pendingPlacedReserveWallKey = "";
-          filledCount--;
-          continue;
-        }
-
-        const lastFilledIndex = slots.findLastIndex(Boolean);
-        if (lastFilledIndex < 0) {
-          break;
-        }
-        slots[lastFilledIndex] = null;
-        filledCount--;
-      }
-    }
-
-    for (const playerId of [...reserveWallSlotsByPlayer.keys()]) {
-      if (!activePlayerIds.has(playerId)) {
-        reserveWallSlotsByPlayer.delete(playerId);
-        reserveWallIdCounters.delete(playerId);
-      }
-    }
-  }
-
   function clearWallPlacementSelection() {
     setSelectedReserveWall(null);
     setSelectedWallSlot(null);
   }
 
   function commitSelectedReserveWall() {
-    pendingPlacedReserveWallKey = selectedReserveWallKey;
+    reserveWallStore.commitSelectedReserveWall(selectedReserveWallKey);
   }
 
   function clearMoveSelection() {
@@ -491,7 +410,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     latestSnapshot = snapshot;
-    syncReserveWalls(snapshot);
+    reserveWallStore.sync(snapshot);
 
     clearGroup(pawnGroup);
     clearGroup(placedWallGroup);
@@ -521,7 +440,7 @@ export function createRenderer3D(container, options = {}) {
 
     // Unplaced Walls
     for (const player of snapshot.players) {
-      const reserveWallSlots = reserveWallSlotsByPlayer.get(player.id) ?? [];
+      const reserveWallSlots = reserveWallStore.getSlots(player.id);
       for (let i = 0; i < reserveWallSlots.length; i++) {
         const reserveWallKey = reserveWallSlots[i];
         if (!reserveWallKey) {
@@ -537,9 +456,7 @@ export function createRenderer3D(container, options = {}) {
       }
     }
 
-    const validReserveWallKeys = new Set(
-      [...reserveWallSlotsByPlayer.values()].flat().filter(Boolean),
-    );
+    const validReserveWallKeys = reserveWallStore.getValidKeys();
     if (
       selectedReserveWallKey &&
       !validReserveWallKeys.has(selectedReserveWallKey)
