@@ -35,6 +35,7 @@ void Position::UndoMove(const Move& move) {
 bool Position::MovePawn(GridPosition pos) {
 	pawnPositions[currentTurn] = pos;
 	if (pos.row == kTargetRow[currentTurn]) {
+		ChangeTurn();
 		return true;
 	}
 	ChangeTurn();
@@ -114,7 +115,7 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 	return reachable_for(kWhite) && reachable_for(kBlack);
 }
 
-constexpr auto kWinningScore = std::numeric_limits<Score>::max() - 10;
+constexpr auto kWinningScore = std::numeric_limits<Score>::max() / 3;
 
 Score Position::Evaluate() const {  // positive  if white is winning
 	if (pawnPositions[kWhite].row == kTargetRow[kWhite]) {
