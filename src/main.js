@@ -1,4 +1,3 @@
-import qlite from "./wasm/wasmbuild.js";
 import { createRenderer3D } from "./renderer3d.js";
 
 const statusText = document.getElementById("status-text");
@@ -26,6 +25,19 @@ let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
 let aiTurnInProgress = false;
 let buildTime = "";
+
+const worker = new Worker(new URL('./worker.js', import.meta.url), {
+  type: "module"
+});
+
+
+worker.onerror = (event) => {
+  console.log(event);
+}
+
+worker.onmessageerror = (event) => {
+  console.log(event);
+}
 
 const USE_MOCK = false;
 
@@ -119,7 +131,7 @@ async function maybeRunAiTurn() {
     return;
   }
 
-  const snapshot = getSnapshot();
+  const snapshot = await getSnapshot();
   if (!isAiTurn(snapshot) || isGameOver(snapshot)) {
     return;
   }
@@ -130,7 +142,7 @@ async function maybeRunAiTurn() {
 
   await new Promise((res) => window.setTimeout(res, 150));
 
-  engine.doBestMove();
+  await engine.doBestMove();
   aiTurnInProgress = false;
   actionStatusLabel = "Action: AI completed its move";
   renderer.clearMoveSelection();
@@ -143,7 +155,7 @@ async function tryPlaceSelectedWall(wallSlot) {
     return;
   }
 
-  if (isGameOver(getSnapshot())) {
+  if (isGameOver(await getSnapshot())) {
     blockInteraction("Action: game over, press restart");
     return;
   }
@@ -160,7 +172,7 @@ async function tryPlaceSelectedWall(wallSlot) {
     return;
   }
 
-  const result = engine.placeWall(
+  const result = await engine.placeWall(
     wallSlot.row,
     wallSlot.col,
     getWallSide(wallSlot.axis),
@@ -187,7 +199,7 @@ async function tryMovePawn(moveTarget) {
     return;
   }
 
-  if (isGameOver(getSnapshot())) {
+  if (isGameOver(await getSnapshot())) {
     blockInteraction("Action: game over, press restart");
     return;
   }
@@ -205,7 +217,7 @@ async function tryMovePawn(moveTarget) {
     return;
   }
 
-  const result = engine.movePawn(moveTarget.row, moveTarget.col);
+  const result = await engine.movePawn(moveTarget.row, moveTarget.col);
 
   if (result === engine.moveResult.INVALID) {
     actionStatusLabel = `Action: invalid pawn move to (${moveTarget.row}, ${moveTarget.col})`;
@@ -272,40 +284,32 @@ const renderer = createRenderer3D(boardViewport, {
   },
 });
 
-function arrayify(vector) {
-  const result = [];
-  for (const v of vector) {
-    result.push(v);
-  }
-  return result;
-}
-
 // Still temporaray
-function createEngineSnapshot() {
+async function createEngineSnapshot() {
   if (USE_MOCK) return MOCK_SNAPSHOT;
 
   return {
     boardSize: 7,
-    currentTurn: engine.getCurrentTurn(),
+    currentTurn: await engine.getCurrentTurn(),
     winner: null,
     players: [
       {
         id: 1,
-        row: engine.getPlayerRow(1),
-        col: engine.getPlayerCol(1),
-        wallsRemaining: engine.getRemainingWalls(1),
+        row: await engine.getPlayerRow(1),
+        col: await engine.getPlayerCol(1),
+        wallsRemaining: await engine.getRemainingWalls(1),
       },
       {
         id: 2,
-        row: engine.getPlayerRow(2),
-        col: engine.getPlayerCol(2),
-        wallsRemaining: engine.getRemainingWalls(2),
+        row: await engine.getPlayerRow(2),
+        col: await engine.getPlayerCol(2),
+        wallsRemaining: await engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: arrayify(engine.getHorizontalWalls()),
-    verticalWalls: arrayify(engine.getVerticalWalls()),
-    legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
-    evaluation: engine.evaluate(),
+    horizontalWalls: await engine.getHorizontalWalls(),
+    verticalWalls: await engine.getVerticalWalls(),
+    legalPawnMoves: await engine.getLegalPawnMoves(),
+    evaluation: await engine.evaluate(),
     // buildTime: engine.buildTime(),
   };
 }
@@ -351,12 +355,11 @@ function updateStatus(snapshot) {
     ? `${playerTwo.wallsRemaining}`
     : "-";
   evaluation = snapshot ? snapshot.evaluation : 0;
-  buildTime = snapshot ? snapshot.buildTime : "";
   updateDevInfo();
 }
 
-function refresh() {
-  const snapshot = getSnapshot();
+async function refresh() {
+  const snapshot = await getSnapshot();
   renderer.render(snapshot, {
     mode: modeSelect.value,
     engineStatus,
@@ -364,12 +367,52 @@ function refresh() {
   updateStatus(snapshot);
 }
 
+
+function createEngineProxy(wasmModule) {
+  function makeFunction(name) {
+    return (...args) => {
+      return new Promise((res) => {
+        const id = (Math.random() + 1).toString(36).substring(7);
+        const fn = (event) => {
+          if (event.data.id == id) {
+            res(event.data.ret);
+            worker.removeEventListener('message', fn);
+          }
+
+        }
+        worker.addEventListener('message', fn);
+        worker.postMessage({
+          "name": name,
+          "args": args,
+          "id": id
+        })
+      })
+    }
+  }
+
+  return new Proxy(wasmModule, {
+    get(target, prop) {
+      const value = Reflect.get(...arguments);
+      if (value === undefined) {
+        return makeFunction(prop);
+      }
+      return value;
+    }
+  })
+}
+
 async function initializeEngine() {
   try {
-    const wasmModule = await qlite();
-    engine = new wasmModule.Engine();
-    engine.wallSide = wasmModule.wallSide;
-    engine.moveResult = wasmModule.moveResult;
+    const wasmModule = await new Promise((res) => {
+      const fn = (event) => {
+        res(event.data)
+        worker.removeEventListener('message', fn);
+      };
+      worker.addEventListener('message', fn);
+    });
+    console.log(wasmModule);
+    engine = createEngineProxy(wasmModule);
+
     buildTime = wasmModule.BUILD_TIME;
     engineStatus = "Engine Ready";
   } catch (error) {
@@ -379,14 +422,14 @@ async function initializeEngine() {
   refresh();
 }
 
-modeSelect?.addEventListener("change", () => {
+modeSelect?.addEventListener("change", async () => {
   refresh();
-  void maybeRunAiTurn();
+  await maybeRunAiTurn();
 });
 
-restartButton?.addEventListener("click", () => {
+restartButton?.addEventListener("click", async () => {
   if (engine) {
-    engine.reset();
+    await engine.reset();
   }
   aiTurnInProgress = false;
   actionStatusLabel = "Action: game restarted";
