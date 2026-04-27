@@ -25,6 +25,7 @@ let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
 let aiTurnInProgress = false;
+let buildTime = ""
 
 const USE_MOCK = false;
 
@@ -66,7 +67,7 @@ const MOCK_SNAPSHOT = {
 };
 
 function updateDevInfo() {
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}<br>Evaluation: ${evaluation}`;
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}<br>Evaluation: ${evaluation}<br>Build Time: ${buildTime}`;
 }
 
 function getWallSide(axis) {
@@ -288,6 +289,7 @@ function createEngineSnapshot() {
     verticalWalls: arrayify(engine.getVerticalWalls()),
     legalPawnMoves: arrayify(engine.getLegalPawnMoves()),
     evaluation: engine.evaluate(),
+    buildTime: engine.buildTime()
   };
 }
 
@@ -330,6 +332,7 @@ function updateStatus(snapshot) {
     ? `${playerTwo.wallsRemaining}`
     : "-";
   evaluation = snapshot ? snapshot.evaluation : 0;
+  buildTime = snapshot ? snapshot.buildTime : "";
   updateDevInfo();
 }
 
@@ -348,6 +351,7 @@ async function initializeEngine() {
     engine = new wasmModule.Engine();
     engine.wallSide = wasmModule.wallSide;
     engine.moveResult = wasmModule.moveResult;
+    buildTime = wasmModule.BUILD_TIME;
     engineStatus = "Engine Ready";
   } catch (error) {
     engineStatus = "Engine not loaded";

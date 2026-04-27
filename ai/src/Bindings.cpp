@@ -21,6 +21,8 @@ EMSCRIPTEN_BINDINGS(engine) {
 		.function("evaluate", &Engine::Evaluate)
         ;
 
+    constant("BUILD_TIME", std::string(__DATE__ " " __TIME__));
+
     value_object<GridPosition>("gridPosition")
         .field("row", &GridPosition::row)
         .field("col", &GridPosition::col)
