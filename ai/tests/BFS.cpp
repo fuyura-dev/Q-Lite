@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
-
 #define private public
+#include "Position.h"
 #include "BFS.h"
+
+
 
 class BFSTest : public testing::Test {
 protected:

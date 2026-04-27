@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "Position.h"
+#include "Search.h"
 
 enum MoveResult : uint8_t {
 	kInvalid,
@@ -30,4 +31,5 @@ public:
 
 private:
 	Position pos;
+	Searcher search;
 };

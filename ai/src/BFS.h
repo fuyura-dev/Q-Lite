@@ -1,12 +1,6 @@
 #pragma once
 
-#include <concepts>
 #include <cstdint>
-#include <queue>
-#include <utility>
-
-#include "MoveGen.h"
-#include "Position.h"
 #include "Quoridor.h"
 
 constexpr int8_t kUnreachable = -1;

@@ -25,15 +25,15 @@ int8_t BFS(GridPosition start_pos, uint8_t target_row, uint64_t right_walls, uin
 		if (visited & (kTopMostMask << (target_row * kGridSize))) {
 			return distance;
 		}
-		uint64_t new_visited = 0;
+		uint64_t new_visited = visited;
 		new_visited |= ((visited & ~kRightMostMask) << 1) & ~(expanded_right << 1); // visit right
 		new_visited |= ((visited & ~kLeftMostMask) >> 1) & ~expanded_right; // visit left
 		new_visited |= ((visited & ~kBottomMostMask) << kGridSize) & ~(expanded_bot << kGridSize); // visit bot
 		new_visited |= ((visited & ~kTopMostMask) >> kGridSize) & ~expanded_bot; // visit top
-		if ((visited & new_visited) == new_visited) {
+		if (visited == new_visited) {
 			break;
 		}
-		visited |= new_visited;
+		visited = new_visited;
 		distance++;
 	}
 	return kUnreachable;

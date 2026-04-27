@@ -80,7 +80,7 @@ MoveResult Engine::MovePawn(int8_t row, int8_t col) {
 }
 
 MoveResult Engine::DoBestMove() {
-    Move best_move = DoSearch(pos);
+    Move best_move = search.DoSearch(pos);
     pos.DoMove(best_move);
     return kValid;
 }

@@ -129,7 +129,7 @@ Score Position::Evaluate() const {  // positive  if white is winning
 	auto evaluate_for = [&](Color color) -> Score {
 		auto distance = BFS(pawnPositions[color], kTargetRow[color], walls[kRightSide], walls[kBottomSide]);
 
-		return (kTotalCells - distance) + static_cast<Score>(remainingWalls[color]);
+		return (kTotalCells - distance) * 2 + static_cast<Score>(remainingWalls[color]);
 	};
 
 	return evaluate_for(kWhite) - evaluate_for(kBlack);
