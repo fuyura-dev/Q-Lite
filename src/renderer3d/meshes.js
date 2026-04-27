@@ -6,20 +6,13 @@ import {
   WALL_HEIGHT,
   WALL_SPAN,
   WALL_THICKNESS,
+  HALF_BOARD,
+  LANE_SIZE,
 } from "./constants";
-import { HALF_BOARD, LANE_SIZE } from "./constants";
+import { getCellCenter, getLaneCenter } from "./geometry";
 
 export function clearGroup(group) {
   group.clear();
-}
-
-export function getCellCenter(index) {
-  const offset = HALF_BOARD - CELL_SIZE / 2;
-  return -offset + index * (CELL_SIZE + LANE_SIZE);
-}
-
-export function getLaneCenter(index) {
-  return getCellCenter(index) + (CELL_SIZE + LANE_SIZE) / 2;
 }
 
 export function createPlacedWallMesh(axis, wall) {

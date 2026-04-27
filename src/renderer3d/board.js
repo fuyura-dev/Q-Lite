@@ -9,7 +9,7 @@ import {
   BOARD_MATERIALS,
   HALF_BOARD,
 } from "./constants";
-import { getCellCenter, getLaneCenter } from "./meshes";
+import { getCellCenter, getLaneCenter } from "./geometry";
 
 function createWallSlotTargets() {
   const horizontalSlotMeshes = [];
