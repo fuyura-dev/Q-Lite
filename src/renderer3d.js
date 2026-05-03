@@ -348,6 +348,10 @@ export function createRenderer3D(container, options = {}) {
   });
 
   renderer.domElement.addEventListener("click", (event) => {
+    if (options.canInteract && !options.canInteract(latestSnapshot)) {
+      return;
+    }
+
     if (!latestSnapshot) {
       setSelectedCell(null);
       setSelectedWallSlot(null);

@@ -128,6 +128,12 @@ button:hover {
   background: var(--accent-strong);
 }
 
+button:disabled,
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .status-bar {
   padding: 14px 16px;
   border-radius: 16px;
@@ -220,4 +226,9 @@ button:hover {
 .dev-info p {
   margin: 0;
   font-size: 0.9rem;
+}
+
+#mode-select option {
+  background: black;
+  color: var(--text);
 }

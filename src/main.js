@@ -3,6 +3,9 @@ import { createRenderer3D } from "./renderer3d.js";
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
 const modeSelect = document.getElementById("mode-select");
+const aiToggleButton = document.getElementById("ai-toggle-button");
+const aiStepButton = document.getElementById("ai-step-button");
+
 const infoCurrentTurn = document.getElementById("info-current-turn");
 const infoPlayerOneWalls = document.getElementById("info-player-one-walls");
 const infoPlayerTwoWalls = document.getElementById("info-player-two-walls");
@@ -24,20 +27,25 @@ let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
 let aiTurnInProgress = false;
+let aiAutoplayEnabled = true;
+let aiLoopToken = 0;
+let latestSnapshot = null;
+
 let buildTime = "";
 
-const worker = new Worker(new URL('./worker.js', import.meta.url), {
-  type: "module"
-});
+const AI_MOVE_DELAY_MS = 300;
 
+const worker = new Worker(new URL("./worker.js", import.meta.url), {
+  type: "module",
+});
 
 worker.onerror = (event) => {
   console.log(event);
-}
+};
 
 worker.onmessageerror = (event) => {
   console.log(event);
-}
+};
 
 const USE_MOCK = false;
 
@@ -92,6 +100,15 @@ function isHumanVsAiMode() {
   return modeSelect?.value == "human-vs-ai";
 }
 
+function isAiVsAiMode() {
+  return modeSelect?.value == "ai-vs-ai";
+}
+
+function getModeLabel() {
+  if (isAiVsAiMode()) return "AI vs AI";
+  return isHumanVsAiMode() ? "Human vs AI" : "Human vs Human";
+}
+
 function getWinner(snapshot) {
   if (!snapshot) {
     return null;
@@ -115,8 +132,25 @@ function isGameOver(snapshot) {
   return getWinner(snapshot) !== null;
 }
 
-function isAiTurn(snapshot) {
-  return isHumanVsAiMode() && snapshot?.currentTurn == 2;
+function isAiControlledTurn(snapshot) {
+  if (!snapshot) return false;
+  if (isAiVsAiMode()) return true;
+  return isHumanVsAiMode() && snapshot.currentTurn == 2;
+}
+
+function canHumanInteract(snapshot) {
+  if (!snapshot) return false;
+  if (isGameOver(snapshot) || aiTurnInProgress) return false;
+  return !isAiControlledTurn(snapshot);
+}
+
+function cancelAiLoop() {
+  aiLoopToken += 1;
+  aiTurnInProgress = false;
+}
+
+function delay(ms) {
+  return new Promise((r) => window.setTimeout(r, ms));
 }
 
 function blockInteraction(message) {
@@ -126,28 +160,64 @@ function blockInteraction(message) {
   updateDevInfo();
 }
 
-async function maybeRunAiTurn() {
+async function maybeRunAiTurn(options = {}) {
+  const { singleStep = false } = options;
+
   if (USE_MOCK || !engine || aiTurnInProgress) {
     return;
   }
 
   const snapshot = await getSnapshot();
-  if (!isAiTurn(snapshot) || isGameOver(snapshot)) {
+  if (!isAiControlledTurn(snapshot) || isGameOver(snapshot)) {
     return;
   }
 
+  if (!singleStep && !aiAutoplayEnabled) {
+    refresh();
+    return;
+  }
+
+  const loopToken = ++aiLoopToken;
   aiTurnInProgress = true;
-  actionStatusLabel = "Action: AI thinking...";
-  refresh();
 
-  await new Promise((res) => window.setTimeout(res, 150));
+  try {
+    while (true) {
+      const currentSnapshot = await getSnapshot();
 
-  await engine.doBestMove();
-  aiTurnInProgress = false;
-  actionStatusLabel = "Action: AI completed its move";
-  renderer.clearMoveSelection();
-  renderer.clearWallPlacementSelection();
-  refresh();
+      if (
+        loopToken != aiLoopToken ||
+        !currentSnapshot ||
+        isGameOver(currentSnapshot) ||
+        !isAiControlledTurn(currentSnapshot)
+      ) {
+        return;
+      }
+
+      if (!singleStep && !aiAutoplayEnabled) {
+        actionStatusLabel = "Action: AI paused";
+        return;
+      }
+
+      actionStatusLabel = singleStep
+        ? "Action: AI executing next move"
+        : "Action: AI thinking";
+      await refresh();
+      await engine.doBestMove();
+      actionStatusLabel = "Action: AI completed its move";
+      renderer.clearMoveSelection();
+      renderer.clearWallPlacementSelection();
+      await refresh();
+
+      if (singleStep) return;
+
+      await delay(AI_MOVE_DELAY_MS);
+    }
+  } finally {
+    if (loopToken == aiLoopToken) {
+      aiTurnInProgress = false;
+    }
+    await refresh();
+  }
 }
 
 async function tryPlaceSelectedWall(wallSlot) {
@@ -157,6 +227,11 @@ async function tryPlaceSelectedWall(wallSlot) {
 
   if (isGameOver(await getSnapshot())) {
     blockInteraction("Action: game over, press restart");
+    return;
+  }
+
+  if (isAiControlledTurn(await getSnapshot())) {
+    blockInteraction("Action: wait for AI turn to finish");
     return;
   }
 
@@ -204,6 +279,11 @@ async function tryMovePawn(moveTarget) {
     return;
   }
 
+  if (isAiControlledTurn(await getSnapshot())) {
+    blockInteraction("Action: wait for the AI turn to finish");
+    return;
+  }
+
   if (USE_MOCK) {
     actionStatusLabel = `Action: mock move pawn to (${moveTarget.row}, ${moveTarget.col})`;
     selectedMoveTargetLabel = `Selected Move Target: (${moveTarget.row}, ${moveTarget.col})`;
@@ -240,6 +320,7 @@ async function tryMovePawn(moveTarget) {
 }
 
 const renderer = createRenderer3D(boardViewport, {
+  canInteract: () => canHumanInteract(latestSnapshot),
   onHoverCell: (cell) => {
     hoverCellLabel = cell
       ? `Hovered Cell: (${cell.row}, ${cell.col})`
@@ -320,8 +401,7 @@ function getSnapshot() {
 }
 
 function updateStatus(snapshot) {
-  const modeLabel =
-    modeSelect.value === "human-vs-ai" ? "Human vs AI" : "Human vs Human";
+  const modeLabel = getModeLabel();
   const playerOne = snapshot?.players?.[0];
   const playerTwo = snapshot?.players?.[1];
   const winner = getWinner(snapshot);
@@ -337,6 +417,8 @@ function updateStatus(snapshot) {
       statusTextMessage = `Player ${winner} wins. ${setup}`;
     } else if (aiTurnInProgress) {
       statusTextMessage = `AI is thinking. ${setup}`;
+    } else if (isAiControlledTurn(snapshot) && !aiAutoplayEnabled) {
+      statusTextMessage = `AI paused. ${setup}`;
     } else {
       statusTextMessage = `Renderer ready. ${setup}`;
     }
@@ -358,15 +440,32 @@ function updateStatus(snapshot) {
   updateDevInfo();
 }
 
+function updateControlState(snapshot) {
+  const aiModeEnabled = isHumanVsAiMode() || isAiVsAiMode();
+  const gameOver = isGameOver(snapshot);
+  const aiTurn = isAiControlledTurn(snapshot);
+
+  if (aiToggleButton) {
+    aiToggleButton.textContent = aiAutoplayEnabled ? "Pause AI" : "Start AI";
+    aiToggleButton.disabled = !aiModeEnabled || !snapshot || gameOver;
+  }
+
+  if (aiStepButton) {
+    aiStepButton.disabled =
+      !aiModeEnabled || !snapshot || gameOver || aiTurnInProgress || !aiTurn;
+  }
+}
+
 async function refresh() {
   const snapshot = await getSnapshot();
+  latestSnapshot = snapshot;
   renderer.render(snapshot, {
     mode: modeSelect.value,
     engineStatus,
   });
   updateStatus(snapshot);
+  updateControlState(snapshot);
 }
-
 
 function createEngineProxy(wasmModule) {
   function makeFunction(name) {
@@ -376,18 +475,17 @@ function createEngineProxy(wasmModule) {
         const fn = (event) => {
           if (event.data.id == id) {
             res(event.data.ret);
-            worker.removeEventListener('message', fn);
+            worker.removeEventListener("message", fn);
           }
-
-        }
-        worker.addEventListener('message', fn);
+        };
+        worker.addEventListener("message", fn);
         worker.postMessage({
-          "name": name,
-          "args": args,
-          "id": id
-        })
-      })
-    }
+          name: name,
+          args: args,
+          id: id,
+        });
+      });
+    };
   }
 
   return new Proxy(wasmModule, {
@@ -397,18 +495,18 @@ function createEngineProxy(wasmModule) {
         return makeFunction(prop);
       }
       return value;
-    }
-  })
+    },
+  });
 }
 
 async function initializeEngine() {
   try {
     const wasmModule = await new Promise((res) => {
       const fn = (event) => {
-        res(event.data)
-        worker.removeEventListener('message', fn);
+        res(event.data);
+        worker.removeEventListener("message", fn);
       };
-      worker.addEventListener('message', fn);
+      worker.addEventListener("message", fn);
     });
     console.log(wasmModule);
     engine = createEngineProxy(wasmModule);
@@ -423,15 +521,37 @@ async function initializeEngine() {
 }
 
 modeSelect?.addEventListener("change", async () => {
+  cancelAiLoop();
+  actionStatusLabel = "Action: mode changed";
+  renderer.clearMoveSelection();
+  renderer.clearWallPlacementSelection();
   refresh();
   await maybeRunAiTurn();
 });
 
+aiToggleButton?.addEventListener("click", async () => {
+  aiAutoplayEnabled = !aiAutoplayEnabled;
+  actionStatusLabel = aiAutoplayEnabled
+    ? "Action: AI autoplay resumed"
+    : "Action: AI autoplay paused";
+  await refresh();
+
+  if (aiAutoplayEnabled) {
+    await maybeRunAiTurn();
+  }
+});
+
+aiStepButton?.addEventListener("click", async () => {
+  actionStatusLabel = "Action: stepping AI move";
+  await refresh();
+  await maybeRunAiTurn({ singleStep: true });
+});
+
 restartButton?.addEventListener("click", async () => {
+  cancelAiLoop();
   if (engine) {
     await engine.reset();
   }
-  aiTurnInProgress = false;
   actionStatusLabel = "Action: game restarted";
   selectedMoveTargetLabel = "Selected Move Target: none";
   selectedWallLabel = "Selected Wall: none";
@@ -440,7 +560,8 @@ restartButton?.addEventListener("click", async () => {
   selectedReserveWall = null;
   renderer.clearMoveSelection();
   renderer.clearWallPlacementSelection();
-  refresh();
+  await refresh();
+  await maybeRunAiTurn();
 });
 
 refresh();
