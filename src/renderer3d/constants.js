@@ -14,11 +14,38 @@ export const BOARD_DEPTH = BOARD_WORLD_SIZE + WALL_SPAN * 2;
 export const HALF_DEPTH = BOARD_DEPTH / 2;
 
 export const BOARD_MATERIALS = {
-  frame: new THREE.MeshStandardMaterial({ color: "#714d31" }),
-  top: new THREE.MeshStandardMaterial({ color: "#9a7149" }),
-  cell: new THREE.MeshStandardMaterial({ color: "#d9bb87" }),
-  lane: new THREE.MeshStandardMaterial({ color: "#4b3423" }),
-  wall: new THREE.MeshStandardMaterial({ color: "#c89352" }),
-  pawnOne: new THREE.MeshStandardMaterial({ color: "#d6d6d6" }),
-  pawnTwo: new THREE.MeshStandardMaterial({ color: "#5a5a5a" }),
+  frame: new THREE.MeshStandardMaterial({
+    color: "#1e0f07",
+    roughness: 0.85,
+    metalness: 0.05,
+  }),
+  top: new THREE.MeshStandardMaterial({
+    color: "#2e1a0c",
+    roughness: 0.8,
+    metalness: 0.04,
+  }),
+  cell: new THREE.MeshStandardMaterial({
+    color: "#3b2010",
+    roughness: 0.78,
+    metalness: 0.03,
+  }),
+  lane: new THREE.MeshStandardMaterial({
+    color: "#130a04",
+    roughness: 0.92,
+    metalness: 0.0,
+  }),
+  wall: new THREE.MeshStandardMaterial({
+    color: "#6b3c1a",
+    roughness: 0.72,
+    metalness: 0.06,
+  }),
+  pawnOne: new THREE.MeshStandardMaterial({
+    color: "#d4861e",
+    metalness: 0.1,
+  }),
+  pawnTwo: new THREE.MeshStandardMaterial({
+    color: "#3b6b3a",
+    roughness: 0.6,
+    metalness: 0.08,
+  }),
 };
