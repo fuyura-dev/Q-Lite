@@ -1,4 +1,4 @@
-add_library(q-liteengine STATIC ${src})
+add_library(q-liteengine)
 
 target_sources(q-liteengine
 	PRIVATE
@@ -7,7 +7,6 @@ target_sources(q-liteengine
 		MoveGen.cpp
 		Position.cpp
 		Search.cpp
-		TransTable.cpp
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -17,7 +16,6 @@ target_sources(q-liteengine
 		Position.h
 		Quoridor.h
 		Search.h
-		TransTable.h
 )
 
 if (EMSCRIPTEN)

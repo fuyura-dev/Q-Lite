@@ -1,5 +1,6 @@
 #include "Search.h"
 #include <limits>
+#include <utility>
 #include "MoveGen.h"
 
 struct Bounds {
@@ -12,26 +13,29 @@ constexpr Bounds kInitialBounds = {
 	.beta = std::numeric_limits<Score>::max()
 };
 
+using SearchResult = std::pair<Score, int>;
+
 namespace {
 
-Score AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth);
+SearchResult AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth);
 
-Score AlphaBetaMax(Position &pos, Bounds bounds, Move& best_move, int depth = 0) {
+SearchResult AlphaBetaMax(Position &pos, Bounds bounds, Move &best_move, int depth = 0) {
 	if (depth == kMaxDepth || pos.IsFinished()) {
-		return pos.Evaluate();
+		return { pos.Evaluate(), depth };
 	}
 	Move restore = {
 		MoveKind::kMovePawn,
 		pos.GetPawnPosition(pos.GetCurrentTurn())
 	};
-
+	int min_evaluated = kMaxDepth;
 	for (const auto move : AllMoveList(pos)) {
 		pos.DoMove(move);
-		Score score = AlphaBetaMin(pos, bounds, best_move, depth + 1);
+		auto [score, evaluated_at] = AlphaBetaMin(pos, bounds, best_move, depth + 1);
 		pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
 
-		if (bounds.alpha < score) {
+		if (bounds.alpha < score || (score == bounds.alpha && evaluated_at < min_evaluated)) {
 			bounds.alpha = score;
+			min_evaluated = evaluated_at;
 			if (depth == 0) {
 				best_move = move;
 			}
@@ -40,26 +44,27 @@ Score AlphaBetaMax(Position &pos, Bounds bounds, Move& best_move, int depth = 0)
 			break;
 		}
 	}
-	return bounds.alpha;
+	return { bounds.alpha, min_evaluated };
 }
 
-Score AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth = 0) {
+SearchResult AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth = 0) {
 	if (depth == kMaxDepth || pos.IsFinished()) {
-		return pos.Evaluate();
+		return { pos.Evaluate(), depth };
 	}
 
 	Move restore = {
 		MoveKind::kMovePawn,
 		pos.GetPawnPosition(pos.GetCurrentTurn())
 	};
-
+	int min_evaluated = kMaxDepth;
 	for (const auto move : AllMoveList(pos)) {
 		pos.DoMove(move);
-		Score score = AlphaBetaMax(pos, bounds, best_move, depth + 1);
+		auto [score, evaluated_at] = AlphaBetaMax(pos, bounds, best_move, depth + 1);
 		pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
 
-		if (score < bounds.beta) {
+		if (score < bounds.beta || (score == bounds.beta && evaluated_at < min_evaluated)) {
 			bounds.beta = score;
+			min_evaluated = evaluated_at;
 			if (depth == 0) {
 				best_move = move;
 			}
@@ -68,7 +73,7 @@ Score AlphaBetaMin(Position &pos, Bounds bounds, Move& best_move, int depth = 0)
 			break;
 		}
 	}
-	return bounds.beta;
+	return { bounds.beta, min_evaluated };
 }
 
 }
