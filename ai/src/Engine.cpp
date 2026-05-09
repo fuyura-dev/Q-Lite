@@ -1,10 +1,9 @@
 #include "Engine.h"
+
 #include "MoveGen.h"
 #include "Search.h"
 
-static Color ToColor(int player) {
-    return player <= 1 ? kWhite : kBlack;
-}
+static Color ToColor(int player) { return player <= 1 ? kWhite : kBlack; }
 
 int Engine::GetCurrentTurn() const {
     return static_cast<int>(pos.GetCurrentTurn()) + 1;
@@ -26,7 +25,7 @@ std::vector<GridPosition> Engine::GetHorizontalWalls() const {
     std::vector<GridPosition> walls;
     for (int8_t row = 0; row < kGridSize; row++) {
         for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({ row, col }, kBottomSide)) {
+            if (pos.HasWall({row, col}, kBottomSide)) {
                 walls.emplace_back(row, col);
             }
         }
@@ -36,13 +35,13 @@ std::vector<GridPosition> Engine::GetHorizontalWalls() const {
 
 std::vector<GridPosition> Engine::GetVerticalWalls() const {
     std::vector<GridPosition> walls;
-	for (int8_t row = 0; row < kGridSize; row++) {
-		for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({ row, col }, kRightSide)) {
+    for (int8_t row = 0; row < kGridSize; row++) {
+        for (int8_t col = 0; col < kGridSize; col++) {
+            if (pos.HasWall({row, col}, kRightSide)) {
                 walls.emplace_back(row, col);
             }
-		}
-	}
+        }
+    }
     return walls;
 }
 
@@ -54,29 +53,24 @@ std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
     return moves;
 }
 
-int Engine::Evaluate() const {
-    return pos.Evaluate();
-}
+int Engine::Evaluate() const { return pos.Evaluate(); }
 
-void Engine::Reset() {
-    pos = Position();
-}
+void Engine::Reset() { pos = Position(); }
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
-    if (pos.CanPlaceWall({ row, col }, side)) {
-        pos.PlaceWall({ row, col }, side);
+    if (pos.CanPlaceWall({row, col}, side)) {
+        pos.PlaceWall({row, col}, side);
         return kValid;
     }
     return kInvalid;
-
 }
 
 MoveResult Engine::MovePawn(int8_t row, int8_t col) {
     auto moves = PawnMoveList(pos);
-    if (std::ranges::find(moves, GridPosition{ row, col }) == moves.end()) {
+    if (std::ranges::find(moves, GridPosition{row, col}) == moves.end()) {
         return kInvalid;
     }
-    return pos.MovePawn({ row, col }) ? kWin : kValid;
+    return pos.MovePawn({row, col}) ? kWin : kValid;
 }
 
 MoveResult Engine::DoBestMove() {
