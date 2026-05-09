@@ -1,4 +1,5 @@
 #include "MoveGen.h"
+
 #include <algorithm>
 
 enum class CellSide : uint8_t {
@@ -20,26 +21,28 @@ inline constexpr CellSideVector kAdjacent[4] = {
 namespace {
 
 WallSide ToWallSide(CellSide side) {
-	if (side == CellSide::kLeftSide || side == CellSide::kRightSide) {
-		return kRightSide;
-	}
-	return kBottomSide;
+    if (side == CellSide::kLeftSide || side == CellSide::kRightSide) {
+        return kRightSide;
+    }
+    return kBottomSide;
 }
 
 bool InBounds(GridPosition pos) {
-	return 0 <= std::min(pos.row, pos.col) && std::max(pos.row, pos.col) < kGridSize;
+    return 0 <= std::min(pos.row, pos.col) &&
+           std::max(pos.row, pos.col) < kGridSize;
 }
 
-bool HasWall(const Position& pos, GridPosition wall_pos, const CellSideVector& cell_side_vector) {
-	auto [side, vector] = cell_side_vector;
-	WallSide wall_side = ToWallSide(side);
-	if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
-		return pos.HasWall(wall_pos, wall_side);
-	}
-	return pos.HasWall(wall_pos + vector, wall_side);
+bool HasWall(const Position& pos, GridPosition wall_pos,
+             const CellSideVector& cell_side_vector) {
+    auto [side, vector] = cell_side_vector;
+    WallSide wall_side = ToWallSide(side);
+    if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
+        return pos.HasWall(wall_pos, wall_side);
+    }
+    return pos.HasWall(wall_pos + vector, wall_side);
 }
 
-}
+}  // namespace
 
 coro::generator<GridPosition> AdjacentMoveList(GridPosition grid_pos, const Position& pos) {
 	for (auto current_vector : kAdjacent) {
