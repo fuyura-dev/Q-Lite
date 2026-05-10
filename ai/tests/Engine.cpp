@@ -18,15 +18,15 @@ TEST_F(EngineTest, CurrentTurn) {
 
 TEST_F(EngineTest, RemainingWalls) {
     ASSERT_EQ(engine.PlaceWall(0, 0, kRightSide), kValid);
-    EXPECT_EQ(engine.GetRemainingWalls(1), kWallsPerPlayer - 1);
+    EXPECT_EQ(engine.GetRemainingWalls(1), kInitialWalls[kTwo] - 1);
 
     ASSERT_EQ(engine.PlaceWall(0, 0, kRightSide), kInvalid);
-    EXPECT_EQ(engine.GetRemainingWalls(2), kWallsPerPlayer);
+    EXPECT_EQ(engine.GetRemainingWalls(2), kInitialWalls[kTwo]);
 
     ASSERT_EQ(engine.PlaceWall(5, 5, kRightSide), kValid);
 
     ASSERT_EQ(engine.PlaceWall(3, 3, kRightSide), kValid);
-    EXPECT_EQ(engine.GetRemainingWalls(1), kWallsPerPlayer - 2);
+    EXPECT_EQ(engine.GetRemainingWalls(1), kInitialWalls[kTwo] - 2);
 }
 
 TEST_F(EngineTest, VerticalWalls) {

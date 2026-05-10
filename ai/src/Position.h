@@ -21,14 +21,14 @@ class Position {
     void UndoMove(const Move& move);
 
     bool MovePawn(GridPosition pos);
-    void PlaceWall(GridPosition pos, WallSide side);
+    void PlaceWall(GridPosition pos, WallSide side, WallLength length);
 
     Color GetCurrentTurn() const;
     GridPosition GetPawnPosition(Color player) const;
-    uint8_t GetRemainingWalls(Color player) const;
+    uint8_t GetRemainingWalls(Color player, WallLength length) const;
 
-    bool HasWall(GridPosition pos, WallSide side) const;
-    bool CanPlaceWall(GridPosition pos, WallSide side) const;
+    bool HasWall(GridPosition pos, WallSide side, WallLength length) const;
+    bool CanPlaceWall(GridPosition pos, WallSide side, WallLength length) const;
 
     Score Evaluate() const;
     bool IsFinished() const;
@@ -39,10 +39,10 @@ class Position {
                             uint64_t right_walls, uint64_t bot_walls);
 
     Color current_turn = kWhite;
-    uint8_t remaining_walls[2] = {kWallsPerPlayer, kWallsPerPlayer};
+    std::array<uint8_t, 3> remaining_walls[2] = {kInitialWalls, kInitialWalls};
     GridPosition pawn_positions[2] = {kStartPositions[kWhite],
                                       kStartPositions[kBlack]};
-    uint64_t walls[2] = {0};
+    uint64_t walls[2][3] = {0};
 };
 
 // each bit in the walls array represents whether a wall exists for a cell.
