@@ -13,12 +13,12 @@ TEST_F(BFSTest, OppositeEnds) {
 }
 
 TEST_F(BFSTest, Blocked) {
-    pos.PlaceWall({0, 0}, kBottomSide);
-    pos.PlaceWall({0, 2}, kBottomSide);
-    pos.PlaceWall({0, 4}, kBottomSide);
-    pos.PlaceWall({1, 5}, kRightSide);
-    pos.PlaceWall({2, 5}, kBottomSide);
-    EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0], pos.walls[kRightSide],
-                  pos.walls[kBottomSide]),
+    pos.PlaceWall({0, 0}, kBottomSide, kTwo);
+    pos.PlaceWall({0, 2}, kBottomSide, kTwo);
+    pos.PlaceWall({0, 4}, kBottomSide, kTwo);
+    pos.PlaceWall({1, 5}, kRightSide, kTwo);
+    pos.PlaceWall({2, 5}, kBottomSide, kTwo);
+    EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0],
+                  pos.walls[kRightSide][kTwo], pos.walls[kBottomSide][kTwo]),
               kUnreachable);
 }

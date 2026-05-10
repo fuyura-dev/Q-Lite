@@ -42,7 +42,7 @@ TEST_F(MoveGenTest, StraightJump) {
 TEST_F(MoveGenTest, StraightJumpBlack) {
     auto at = kStartPositions[1];
     Move(at + GridPosition{1, 0}, at);
-    pos.PlaceWall(GridPosition{0, 0}, kBottomSide);
+    pos.PlaceWall(GridPosition{0, 0}, kBottomSide, kTwo);
 
     std::vector expect = {
         at + GridPosition{0, 1},
@@ -61,8 +61,8 @@ TEST_F(MoveGenTest, StraightJumpBlack) {
 TEST_F(MoveGenTest, SideJump) {
     auto at = kStartPositions[0];
     Move(at, at + GridPosition{-1, 0});
-    pos.PlaceWall(at + GridPosition{-2, 0}, kBottomSide);
-    pos.PlaceWall(at + GridPosition{-2, 0}, kBottomSide);
+    pos.PlaceWall(at + GridPosition{-2, 0}, kBottomSide, kTwo);
+    pos.PlaceWall(at + GridPosition{-2, 0}, kBottomSide, kTwo);
 
     std::vector expect = {at + GridPosition{0, 1}, at + GridPosition{0, -1},
                           at + GridPosition{-1, 1}, at + GridPosition{-1, -1}};

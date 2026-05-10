@@ -18,14 +18,14 @@ int Engine::GetPlayerCol(int player) const {
 }
 
 int Engine::GetRemainingWalls(int player) const {
-    return pos.GetRemainingWalls(ToColor(player));
+    return pos.GetRemainingWalls(ToColor(player), kTwo);
 }
 
 std::vector<GridPosition> Engine::GetHorizontalWalls() const {
     std::vector<GridPosition> walls;
     for (int8_t row = 0; row < kGridSize; row++) {
         for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({row, col}, kBottomSide)) {
+            if (pos.HasWall({row, col}, kBottomSide, kTwo)) {
                 walls.emplace_back(row, col);
             }
         }
@@ -37,7 +37,7 @@ std::vector<GridPosition> Engine::GetVerticalWalls() const {
     std::vector<GridPosition> walls;
     for (int8_t row = 0; row < kGridSize; row++) {
         for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({row, col}, kRightSide)) {
+            if (pos.HasWall({row, col}, kRightSide, kTwo)) {
                 walls.emplace_back(row, col);
             }
         }
@@ -58,8 +58,8 @@ int Engine::Evaluate() const { return pos.Evaluate(); }
 void Engine::Reset() { pos = Position(); }
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
-    if (pos.CanPlaceWall({row, col}, side)) {
-        pos.PlaceWall({row, col}, side);
+    if (pos.CanPlaceWall({row, col}, side, kTwo)) {
+        pos.PlaceWall({row, col}, side, kTwo);
         return kValid;
     }
     return kInvalid;

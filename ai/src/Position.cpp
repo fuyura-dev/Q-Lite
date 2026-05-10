@@ -10,15 +10,15 @@ GridPosition Position::GetPawnPosition(Color player) const {
     return pawn_positions[player];
 }
 
-uint8_t Position::GetRemainingWalls(Color player) const {
-    return remaining_walls[player];
+uint8_t Position::GetRemainingWalls(Color player, WallLength length) const {
+    return remaining_walls[player][length];
 }
 
 bool Position::DoMove(const Move& move) {
     if (move.kind == MoveKind::kMovePawn) {
         return MovePawn(move.pos);
     }
-    PlaceWall(move.pos, *move.side);
+    PlaceWall(move.pos, *move.side, kTwo);
     return false;
 }
 
@@ -27,8 +27,8 @@ void Position::UndoMove(const Move& move) {
     if (move.kind == MoveKind::kMovePawn) {
         pawn_positions[current_turn] = move.pos;
     } else {
-        remaining_walls[current_turn]++;
-        walls[*move.side] &= ~(1LL << move.pos.compress());
+        remaining_walls[current_turn][kTwo]++;
+        walls[*move.side][kTwo] &= ~(1LL << move.pos.compress());
     }
 }
 
@@ -42,13 +42,14 @@ bool Position::MovePawn(GridPosition pos) {
     return false;
 }
 
-void Position::PlaceWall(GridPosition pos, WallSide side) {
-    walls[side] |= 1LL << pos.compress();
-    remaining_walls[current_turn]--;
+void Position::PlaceWall(GridPosition pos, WallSide side, WallLength length) {
+    walls[side][length] |= 1LL << pos.compress();
+    remaining_walls[current_turn][length]--;
     ChangeTurn();
 }
 
-bool Position::HasWall(GridPosition pos, WallSide side) const {
+bool Position::HasWall(GridPosition pos, WallSide side,
+                       WallLength length) const {
     uint64_t wall_mask = 1LL << pos.compress();
     if (side == kBottomSide) {
         if (pos.col > 0) {
@@ -59,11 +60,12 @@ bool Position::HasWall(GridPosition pos, WallSide side) const {
             wall_mask |= 1LL << (pos + GridPosition{-1, 0}).compress();
         }
     }
-    return (walls[side] & wall_mask) != 0;
+    return (walls[side][length] & wall_mask) != 0;
 }
 
-bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
-    if (remaining_walls[current_turn] == 0) {
+bool Position::CanPlaceWall(GridPosition pos, WallSide side,
+                            WallLength length) const {
+    if (remaining_walls[current_turn][length] == 0) {
         return false;
     }
     if (pos.col == kGridSize - 1) {
@@ -90,17 +92,17 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
         }
     }
 
-    if (walls[side] & same_side_mask) {
+    if (walls[side][length] & same_side_mask) {
         return false;
     }
     uint64_t mask = 1LL << pos.compress();
     WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
-    if (walls[other_side] & mask) {
+    if (walls[other_side][length] & mask) {
         return false;
     }
 
-    uint64_t right_walls = walls[kRightSide];
-    uint64_t bot_walls = walls[kBottomSide];
+    uint64_t right_walls = walls[kRightSide][length];
+    uint64_t bot_walls = walls[kBottomSide][length];
 
     if (side == kRightSide) {
         right_walls |= (1LL << pos.compress());
@@ -129,10 +131,10 @@ Score Position::Evaluate() const {  // positive  if white is winning
 
     auto evaluate_for = [&](Color color) -> Score {
         auto distance = BFS(pawn_positions[color], kTargetRow[color],
-                            walls[kRightSide], walls[kBottomSide]);
+                            walls[kRightSide][kTwo], walls[kBottomSide][kTwo]);
 
         return (kTotalCells - distance) +
-               static_cast<Score>(remaining_walls[color]);
+               static_cast<Score>(remaining_walls[color][kTwo]);
     };
 
     return evaluate_for(kWhite) - evaluate_for(kBlack);

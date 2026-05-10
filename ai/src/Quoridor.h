@@ -1,10 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 constexpr auto kGridSize = 7;
 constexpr auto kTotalCells = kGridSize * kGridSize;
-constexpr auto kWallsPerPlayer = 8;
+constexpr std::array<uint8_t, 3> kInitialWalls = {4, 3, 1};
 
 struct GridPosition {
     int8_t row, col;
@@ -27,6 +28,8 @@ struct GridPosition {
 enum Color : bool { kWhite, kBlack };
 
 enum WallSide : bool { kRightSide, kBottomSide };
+
+enum WallLength : uint8_t { kOne, kTwo, kThree };
 
 constexpr GridPosition kStartPositions[2] = {
     {.row = kGridSize - 1, .col = kGridSize / 2},

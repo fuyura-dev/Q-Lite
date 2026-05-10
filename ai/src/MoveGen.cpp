@@ -22,9 +22,9 @@ bool HasWall(const Position& pos, GridPosition wall_pos,
     auto [side, vector] = cell_side_vector;
     WallSide wall_side = ToWallSide(side);
     if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
-        return pos.HasWall(wall_pos, wall_side);
+        return pos.HasWall(wall_pos, wall_side, kTwo);
     }
-    return pos.HasWall(wall_pos + vector, wall_side);
+    return pos.HasWall(wall_pos + vector, wall_side, kTwo);
 }
 
 }  // namespace
@@ -109,8 +109,8 @@ void AllMoveList::Iterator::Advance() {
             .kind = MoveKind::kMovePawn, .pos = grid_pos, .side = std::nullopt};
         return;
     }
-    if (move_list->pos.GetRemainingWalls(move_list->pos.GetCurrentTurn()) ==
-        0) {
+    if (move_list->pos.GetRemainingWalls(move_list->pos.GetCurrentTurn(),
+                                         kTwo) == 0) {
         done = true;
         return;
     }
@@ -123,7 +123,7 @@ void AllMoveList::Iterator::Advance() {
             wall_current++;
         }
 
-        if (move_list->pos.CanPlaceWall(grid_pos, side)) {
+        if (move_list->pos.CanPlaceWall(grid_pos, side, kTwo)) {
             ret = {.kind = MoveKind::kPlaceWall, .pos = grid_pos, .side = side};
             return;
         }
