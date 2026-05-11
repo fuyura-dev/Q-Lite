@@ -82,10 +82,10 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side) const {
 			same_side_mask |= 1LL << (pos + GridPosition{ 0, 1 }).compress();
 		}
 	} else {
-		if (pos.col > 0) {
+		if (pos.row > 0) {
 			same_side_mask |= 1LL << (pos + GridPosition{ -1, 0 }).compress();
 		}
-		if (pos.col < kGridSize - 2) {
+		if (pos.row < kGridSize - 2) {
 			same_side_mask |= 1LL << (pos + GridPosition{ 1, 0 }).compress();
 		}
 	}
