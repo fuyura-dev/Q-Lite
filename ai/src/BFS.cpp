@@ -17,8 +17,6 @@ int8_t BFS(GridPosition start_pos, uint8_t target_row, uint64_t right_walls,
            uint64_t bot_walls) {
     uint64_t visited = 1LL << start_pos.compress();
 
-    uint64_t expanded_right = right_walls | (right_walls << kGridSize);
-    uint64_t expanded_bot = bot_walls | (bot_walls << 1);
     int8_t distance = 0;
 
     while (true) {
@@ -27,13 +25,12 @@ int8_t BFS(GridPosition start_pos, uint8_t target_row, uint64_t right_walls,
         }
         uint64_t new_visited = 0;
         new_visited |= ((visited & ~kRightMostMask) << 1) &
-                       ~(expanded_right << 1);  // visit right
+                       ~(right_walls << 1);  // visit right
         new_visited |=
-            ((visited & ~kLeftMostMask) >> 1) & ~expanded_right;  // visit left
+            ((visited & ~kLeftMostMask) >> 1) & ~right_walls;  // visit left
         new_visited |= ((visited & ~kBottomMostMask) << kGridSize) &
-                       ~(expanded_bot << kGridSize);  // visit bot
-        new_visited |= ((visited & ~kTopMostMask) >> kGridSize) &
-                       ~expanded_bot;  // visit top
+                       ~(bot_walls << kGridSize);  // visit bot
+        new_visited |= ((visited & ~kTopMostMask) >> kGridSize) & ~bot_walls;  // visit top
         if ((visited & new_visited) == new_visited) {
             break;
         }

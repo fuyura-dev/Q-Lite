@@ -27,6 +27,7 @@ class Position {
     GridPosition GetPawnPosition(Color player) const;
     uint8_t GetRemainingWalls(Color player, WallLength length) const;
 
+    bool HasWall(GridPosition pos, WallSide side) const;
     bool HasWall(GridPosition pos, WallSide side, WallLength length) const;
     bool CanPlaceWall(GridPosition pos, WallSide side, WallLength length) const;
 
@@ -34,6 +35,8 @@ class Position {
     bool IsFinished() const;
 
    private:
+    bool HasIntersectingWall(GridPosition pos, WallSide side,
+                             WallLength length) const;
     void ChangeTurn();
     static bool IsReachable(GridPosition start_pos, uint8_t target_row,
                             uint64_t right_walls, uint64_t bot_walls);
@@ -43,6 +46,7 @@ class Position {
     GridPosition pawn_positions[2] = {kStartPositions[kWhite],
                                       kStartPositions[kBlack]};
     uint64_t walls[2][3] = {0};
+    uint64_t combined_walls[2] = {0};
 };
 
 // each bit in the walls array represents whether a wall exists for a cell.

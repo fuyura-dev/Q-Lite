@@ -22,9 +22,9 @@ bool HasWall(const Position& pos, GridPosition wall_pos,
     auto [side, vector] = cell_side_vector;
     WallSide wall_side = ToWallSide(side);
     if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
-        return pos.HasWall(wall_pos, wall_side, kTwo);
+        return pos.HasWall(wall_pos, wall_side);
     }
-    return pos.HasWall(wall_pos + vector, wall_side, kTwo);
+    return pos.HasWall(wall_pos + vector, wall_side);
 }
 
 }  // namespace

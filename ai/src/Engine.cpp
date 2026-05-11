@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+#include <ranges>
+
 #include "MoveGen.h"
 #include "Search.h"
 
@@ -17,28 +19,26 @@ int Engine::GetPlayerCol(int player) const {
     return pos.GetPawnPosition(ToColor(player)).col;
 }
 
-int Engine::GetRemainingWalls(int player) const {
-    return pos.GetRemainingWalls(ToColor(player), kTwo);
-}
-
-std::vector<GridPosition> Engine::GetHorizontalWalls() const {
-    std::vector<GridPosition> walls;
-    for (int8_t row = 0; row < kGridSize; row++) {
-        for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({row, col}, kBottomSide, kTwo)) {
-                walls.emplace_back(row, col);
-            }
-        }
+std::vector<int> Engine::GetRemainingWalls(int player) const {
+    std::vector<int> ret;
+    for (WallLength length : {kOne, kTwo, kThree}) {
+        ret.push_back(pos.GetRemainingWalls(ToColor(player), length));
     }
-    return walls;
+    return ret;
 }
-
-std::vector<GridPosition> Engine::GetVerticalWalls() const {
-    std::vector<GridPosition> walls;
+std::vector<Wall> Engine::GetWalls() const {
+    std::vector<Wall> walls;
     for (int8_t row = 0; row < kGridSize; row++) {
         for (int8_t col = 0; col < kGridSize; col++) {
-            if (pos.HasWall({row, col}, kRightSide, kTwo)) {
-                walls.emplace_back(row, col);
+            for (WallLength length : {kOne, kTwo, kThree}) {
+                if (pos.HasWall({row, col}, kRightSide, length)) {
+                    walls.emplace_back(GridPosition{row, col}, kRightSide,
+                                       length);
+                }
+                if (pos.HasWall({row, col}, kBottomSide, length)) {
+                    walls.emplace_back(GridPosition{row, col}, kBottomSide,
+                                       length);
+                }
             }
         }
     }
@@ -57,9 +57,10 @@ int Engine::Evaluate() const { return pos.Evaluate(); }
 
 void Engine::Reset() { pos = Position(); }
 
-MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side) {
-    if (pos.CanPlaceWall({row, col}, side, kTwo)) {
-        pos.PlaceWall({row, col}, side, kTwo);
+MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,
+                             WallLength length) {
+    if (pos.CanPlaceWall({row, col}, side, length)) {
+        pos.PlaceWall({row, col}, side, length);
         return kValid;
     }
     return kInvalid;
@@ -75,6 +76,5 @@ MoveResult Engine::MovePawn(int8_t row, int8_t col) {
 
 MoveResult Engine::DoBestMove() {
     Move best_move = DoSearch(pos);
-    pos.DoMove(best_move);
-    return kValid;
+    return pos.DoMove(best_move) ? kWin : kValid;
 }
