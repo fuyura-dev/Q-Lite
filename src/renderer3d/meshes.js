@@ -9,7 +9,8 @@ import {
   HALF_BOARD,
   LANE_SIZE,
 } from "./constants";
-import { getCellCenter, getLaneCenter } from "./geometry";
+import { getCellCenter, getLaneCenter, getWallSpan } from "./geometry";
+import { getReserveWallLengthFromKey } from "./reserveWalls";
 
 export function clearGroup(group) {
   group.clear();
@@ -38,8 +39,9 @@ export function createPlacedWallMesh(axis, wall) {
 }
 
 export function createReserveWallMesh(reserveWallKey, isSelected = false) {
+  const wallLength = getReserveWallLengthFromKey(reserveWallKey);
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, WALL_SPAN),
+    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, getWallSpan(wallLength)),
     new THREE.MeshStandardMaterial({
       color: isSelected ? "#c8721a" : "#6b3c1a",
       roughness: isSelected ? 0.5 : 0.72,
@@ -54,6 +56,7 @@ export function createReserveWallMesh(reserveWallKey, isSelected = false) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.userData.reserveWallKey = reserveWallKey;
+  mesh.userData.wallLength = wallLength;
 
   return mesh;
 }

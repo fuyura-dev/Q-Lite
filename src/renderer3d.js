@@ -32,7 +32,10 @@ import {
   HALF_BOARD,
   WALL_HEIGHT,
 } from "./renderer3d/constants";
-import { createReserveWallStore } from "./renderer3d/reserveWalls";
+import {
+  createReserveWallStore,
+  getReserveWallLengthFromKey,
+} from "./renderer3d/reserveWalls";
 
 export function createRenderer3D(container, options = {}) {
   if (!container) {
@@ -300,7 +303,10 @@ export function createRenderer3D(container, options = {}) {
       return;
     }
 
-    notifySelectReserveWall({ key: selectedReserveWallKey });
+    notifySelectReserveWall({
+      key: selectedReserveWallKey,
+      length: getReserveWallLengthFromKey(selectedReserveWallKey),
+    });
     rerenderSnapshot();
   }
 
@@ -476,7 +482,8 @@ export function createRenderer3D(container, options = {}) {
           reserveWallKey,
           reserveWallKey == selectedReserveWallKey,
         );
-        const position = getReserveWallPosition(player.id, i);
+        const wallLength = getReserveWallLengthFromKey(reserveWallKey);
+        const position = getReserveWallPosition(player.id, i, wallLength);
         mesh.position.set(position.x, position.y, position.z);
         reserveWallGroup.add(mesh);
       }

@@ -70,12 +70,19 @@ export function getReserveWallSlots() {
   ];
 }
 
-export function getReserveWallPosition(playerId, index) {
+export function getWallSpan(length) {
+  return CELL_SIZE * length + LANE_SIZE * Math.max(0, length - 1);
+}
+
+export function getReserveWallPosition(playerId, index, wallLength = 2) {
   const slots = getReserveWallSlots();
+  const baseSpan = getWallSpan(2);
+  const spanOffset = (getWallSpan(wallLength) - baseSpan) / 2;
+  const direction = playerId == 1 ? 1 : -1;
 
   return {
     x: slots[index],
     y: CELL_HEIGHT + WALL_HEIGHT / 2,
-    z: getLaneCenter(playerId == 1 ? 7 : -2),
+    z: getLaneCenter(playerId == 1 ? 7 : -2) + direction * spanOffset,
   };
 }
