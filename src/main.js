@@ -47,7 +47,7 @@ worker.onmessageerror = (event) => {
   console.log(event);
 };
 
-const USE_MOCK = false;
+const USE_MOCK = true;
 
 const MOCK_SNAPSHOT = {
   boardSize: 7,
@@ -58,13 +58,23 @@ const MOCK_SNAPSHOT = {
       id: 1,
       row: 6,
       col: 3,
-      wallsRemaining: 6,
+      wallsRemaining: 8,
+      wallInventory: {
+        one: 4,
+        two: 3,
+        three: 1,
+      },
     },
     {
       id: 2,
       row: 0,
       col: 3,
-      wallsRemaining: 7,
+      wallsRemaining: 8,
+      wallInventory: {
+        one: 4,
+        two: 3,
+        three: 1,
+      },
     },
   ],
   horizontalWalls: [
