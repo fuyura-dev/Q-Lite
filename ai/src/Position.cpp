@@ -1,6 +1,8 @@
 #include "Position.h"
 
+#include <algorithm>
 #include <limits>
+#include <utility>
 
 #include "BFS.h"
 
@@ -22,6 +24,11 @@ bool Position::DoMove(const Move& move) {
     return false;
 }
 
+constexpr std::array kPlacedWallMask = {
+    std::array{1LL, 1LL | (1LL << kGridSize),
+               1LL | (1LL << kGridSize) | (1LL << (2 * kGridSize))},
+    std::array{0b1LL, 0b11LL, 0b111LL}};
+
 void Position::UndoMove(const Move& move) {
     ChangeTurn();
     if (move.kind == MoveKind::kMovePawn) {
@@ -29,6 +36,8 @@ void Position::UndoMove(const Move& move) {
     } else {
         remaining_walls[current_turn][kTwo]++;
         walls[*move.side][kTwo] &= ~(1LL << move.pos.compress());
+        combined_walls[*move.side] &=
+            ~(kPlacedWallMask[*move.side][kTwo] << move.pos.compress());
     }
 }
 
@@ -44,23 +53,18 @@ bool Position::MovePawn(GridPosition pos) {
 
 void Position::PlaceWall(GridPosition pos, WallSide side, WallLength length) {
     walls[side][length] |= 1LL << pos.compress();
+    combined_walls[side] |= kPlacedWallMask[side][length] << pos.compress();
     remaining_walls[current_turn][length]--;
     ChangeTurn();
 }
 
+bool Position::HasWall(GridPosition pos, WallSide side) const {
+    return combined_walls[side] & (1LL << pos.compress());
+}
+
 bool Position::HasWall(GridPosition pos, WallSide side,
                        WallLength length) const {
-    uint64_t wall_mask = 1LL << pos.compress();
-    if (side == kBottomSide) {
-        if (pos.col > 0) {
-            wall_mask |= 1LL << (pos + GridPosition{0, -1}).compress();
-        }
-    } else {
-        if (pos.row > 0) {
-            wall_mask |= 1LL << (pos + GridPosition{-1, 0}).compress();
-        }
-    }
-    return (walls[side][length] & wall_mask) != 0;
+    return walls[side][length] & (1LL << pos.compress());
 }
 
 bool Position::CanPlaceWall(GridPosition pos, WallSide side,
@@ -68,51 +72,40 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side,
     if (remaining_walls[current_turn][length] == 0) {
         return false;
     }
-    if (pos.col == kGridSize - 1) {
+    if (side == kRightSide &&
+        (pos.row + length >= kGridSize || pos.col == kGridSize - 1)) {
         return false;
     }
-    if (pos.row == kGridSize - 1) {
-        return false;
-    }
-
-    uint64_t same_side_mask = 1LL << pos.compress();
-    if (side == kBottomSide) {
-        if (pos.col > 0) {
-            same_side_mask |= 1LL << (pos + GridPosition{0, -1}).compress();
-        }
-        if (pos.col < kGridSize - 2) {
-            same_side_mask |= 1LL << (pos + GridPosition{0, 1}).compress();
-        }
-    } else {
-        if (pos.col > 0) {
-            same_side_mask |= 1LL << (pos + GridPosition{-1, 0}).compress();
-        }
-        if (pos.col < kGridSize - 2) {
-            same_side_mask |= 1LL << (pos + GridPosition{1, 0}).compress();
-        }
-    }
-
-    if (walls[side][length] & same_side_mask) {
-        return false;
-    }
-    uint64_t mask = 1LL << pos.compress();
-    WallSide other_side = side == kBottomSide ? kRightSide : kBottomSide;
-    if (walls[other_side][length] & mask) {
+    if (side == kBottomSide &&
+        (pos.col + length >= kGridSize || pos.row == kGridSize - 1)) {
         return false;
     }
 
-    uint64_t right_walls = walls[kRightSide][length];
-    uint64_t bot_walls = walls[kBottomSide][length];
+    GridPosition vector =
+        side == kRightSide ? GridPosition{1, 0} : GridPosition{0, 1};
+
+    for (int8_t len = 0; len <= length; len++) {
+        if (HasWall(pos + vector * len, side)) {
+            return false;
+        }
+    }
+
+    if (HasIntersectingWall(pos, side, length)) {
+        return false;
+    }
+
+    uint64_t right_walls = combined_walls[kRightSide];
+    uint64_t bot_walls = combined_walls[kBottomSide];
 
     if (side == kRightSide) {
-        right_walls |= (1LL << pos.compress());
+        right_walls |= kPlacedWallMask[kRightSide][length] << pos.compress();
     } else {
-        bot_walls |= (1LL << pos.compress());
+        bot_walls |= kPlacedWallMask[kBottomSide][length] << pos.compress();
     }
 
     auto reachable_for = [&](Color color) {
-        return IsReachable(pawn_positions[color], kTargetRow[color], right_walls,
-                           bot_walls);
+        return IsReachable(pawn_positions[color], kTargetRow[color],
+                           right_walls, bot_walls);
     };
 
     return reachable_for(kWhite) && reachable_for(kBlack);
@@ -143,6 +136,60 @@ Score Position::Evaluate() const {  // positive  if white is winning
 bool Position::IsFinished() const {
     return pawn_positions[kWhite].row == kTargetRow[kWhite] ||
            pawn_positions[kBlack].row == kTargetRow[kBlack];
+}
+
+consteval auto Transpose(auto Checks) {
+    for (auto& [_, vector] : Checks) {
+        std::swap(vector.row, vector.col);
+    }
+    return Checks;
+}
+
+constexpr std::array kChecksForTwoBottom = {
+    std::pair{kTwo, GridPosition{0, 0}}, std::pair{kThree, GridPosition{0, 0}},
+    std::pair{kThree, GridPosition{-1, 0}}};
+
+constexpr std::array kChecksForThreeBottom = {
+    std::pair{kTwo, GridPosition{0, 0}},
+    std::pair{kTwo, GridPosition{0, 1}},
+    std::pair{kThree, GridPosition{0, 0}},
+    std::pair{kThree, GridPosition{0, 1}},
+    std::pair{kThree, GridPosition{-1, 0}},
+    std::pair{kThree, GridPosition{-1, 1}}};
+
+constexpr std::array kChecksForTwoRight = Transpose(kChecksForTwoBottom);
+constexpr std::array kChecksForThreeRight = Transpose(kChecksForThreeBottom);
+
+constexpr std::array kChecksForTwo = {kChecksForTwoRight, kChecksForTwoBottom};
+
+constexpr std::array kChecksForThree = {kChecksForThreeRight,
+                                        kChecksForThreeBottom};
+
+bool Position::HasIntersectingWall(GridPosition pos, WallSide side,
+                                   WallLength length) const {
+    if (length == kOne) {
+        return false;
+    }
+
+    WallSide other_side = side == kRightSide ? kBottomSide : kRightSide;
+
+    auto try_for = [&](auto checks) {
+        return std::ranges::any_of(checks, [&](const auto& e) {
+            const auto& [other_length, vector] = e;
+            GridPosition wall_pos = pos + vector;
+            if (0 <= wall_pos.row && 0 <= wall_pos.col &&
+                HasWall(wall_pos, other_side, other_length)) {
+                return true;
+            }
+            return false;
+        });
+    };
+
+    if (length == kTwo) {
+        return try_for(kChecksForTwo[side]);
+    }
+
+    return try_for(kChecksForThree[side]);
 }
 
 void Position::ChangeTurn() {

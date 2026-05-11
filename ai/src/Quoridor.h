@@ -18,6 +18,10 @@ struct GridPosition {
         return {static_cast<int8_t>(row - that.row),
                 static_cast<int8_t>(col - that.col)};
     }
+    GridPosition operator*(int8_t that) const {
+        return {static_cast<int8_t>(row * that),
+                static_cast<int8_t>(col * that)};
+    }
     uint8_t compress() const { return row * kGridSize + col; }
     static GridPosition from_compressed(uint8_t v) {
         return {static_cast<int8_t>(v / kGridSize),
