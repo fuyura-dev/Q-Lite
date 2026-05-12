@@ -18,6 +18,8 @@ target_sources(q-liteengine
 		Search.h
 )
 
+target_link_libraries(q-liteengine libcoro)
+
 if (EMSCRIPTEN)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../src/wasm")
 	add_executable(wasmbuild 
