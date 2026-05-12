@@ -68,11 +68,11 @@ const MOCK_SNAPSHOT = {
     },
   ],
   horizontalWalls: [
-    { pos: { row: 1, col: 1 }, side: 1, length: 2 },
-    { pos: { row: 4, col: 2 }, side: 1, length: 2 },
+    { pos: { row: 1, col: 1 }, side: 1, length: 3 },
+    { pos: { row: 4, col: 2 }, side: 1, length: 1 },
   ],
   verticalWalls: [
-    { pos: { row: 2, col: 1 }, side: 0, length: 2 },
+    { pos: { row: 2, col: 1 }, side: 0, length: 3 },
     { pos: { row: 1, col: 5 }, side: 0, length: 2 },
   ],
   legalPawnMoves: [

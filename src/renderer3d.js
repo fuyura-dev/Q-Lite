@@ -5,7 +5,6 @@ import {
   getLaneCenter,
   getReserveWallSlots,
   getPawnPosition,
-  mergeWallSegments,
   getReserveWallPosition,
 } from "./renderer3d/geometry";
 import { createSceneBundle } from "./renderer3d/scene";
@@ -502,16 +501,10 @@ export function createRenderer3D(container, options = {}) {
     }
 
     // Placed Walls
-    const horizontalWalls = mergeWallSegments(
-      snapshot.horizontalWalls,
-      "horizontal",
-    );
-    const verticalWalls = mergeWallSegments(snapshot.verticalWalls, "vertical");
-
-    for (const wall of horizontalWalls) {
+    for (const wall of snapshot.horizontalWalls ?? []) {
       placedWallGroup.add(createPlacedWallMesh("horizontal", wall));
     }
-    for (const wall of verticalWalls) {
+    for (const wall of snapshot.verticalWalls ?? []) {
       placedWallGroup.add(createPlacedWallMesh("vertical", wall));
     }
 

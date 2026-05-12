@@ -23,22 +23,23 @@ export function clearGroup(group) {
 
 export function createPlacedWallMesh(axis, wall) {
   const isHorizontal = axis == "horizontal";
+  const wallSpan = getWallSpan(wall.length ?? 2);
+  const center = getWallPreviewCenter(
+    { axis, row: wall.pos.row, col: wall.pos.col },
+    wall.length ?? 2,
+  );
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(
-      isHorizontal ? WALL_SPAN : WALL_THICKNESS,
+      isHorizontal ? wallSpan : WALL_THICKNESS,
       WALL_HEIGHT,
-      isHorizontal ? WALL_THICKNESS : WALL_SPAN,
+      isHorizontal ? WALL_THICKNESS : wallSpan,
     ),
     BOARD_MATERIALS.wall,
   );
 
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.position.set(
-    getLaneCenter(wall.col),
-    CELL_HEIGHT + WALL_HEIGHT / 2,
-    getLaneCenter(wall.row),
-  );
+  mesh.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
 
   return mesh;
 }
