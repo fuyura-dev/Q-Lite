@@ -74,6 +74,22 @@ export function getWallSpan(length) {
   return CELL_SIZE * length + LANE_SIZE * Math.max(0, length - 1);
 }
 
+export function getWallPreviewCenter(wallSlot, wallLength = 2) {
+  const offset = ((CELL_SIZE + LANE_SIZE) * (wallLength - 1)) / 2;
+
+  if (wallSlot.axis == "horizontal") {
+    return {
+      x: getCellCenter(wallSlot.col) + offset,
+      z: getLaneCenter(wallSlot.row),
+    };
+  }
+
+  return {
+    x: getLaneCenter(wallSlot.col),
+    z: getCellCenter(wallSlot.row) + offset,
+  };
+}
+
 export function getReserveWallPosition(playerId, index, wallLength = 2) {
   const slots = getReserveWallSlots();
   const baseSpan = getWallSpan(2);

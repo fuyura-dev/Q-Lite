@@ -9,7 +9,12 @@ import {
   HALF_BOARD,
   LANE_SIZE,
 } from "./constants";
-import { getCellCenter, getLaneCenter, getWallSpan } from "./geometry";
+import {
+  getCellCenter,
+  getLaneCenter,
+  getWallSpan,
+  getWallPreviewCenter,
+} from "./geometry";
 import { getReserveWallLengthFromKey } from "./reserveWalls";
 
 export function clearGroup(group) {
@@ -155,17 +160,15 @@ export function createSelectedWallMesh() {
 }
 
 export function updateWallPreviewMesh(mesh, wallSlot) {
+  const wallSpan = getWallSpan(mesh.userData.wallLength ?? 2);
+  const center = getWallPreviewCenter(wallSlot, mesh.userData.wallLength ?? 2);
   mesh.geometry.dispose();
   mesh.geometry = new THREE.BoxGeometry(
-    wallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
+    wallSlot.axis == "horizontal" ? wallSpan : WALL_THICKNESS,
     WALL_HEIGHT,
-    wallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
+    wallSlot.axis == "horizontal" ? WALL_THICKNESS : wallSpan,
   );
-  mesh.position.set(
-    getLaneCenter(wallSlot.col),
-    CELL_HEIGHT + WALL_HEIGHT / 2,
-    getLaneCenter(wallSlot.row),
-  );
+  mesh.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
 }
 
 export function createMoveTargetMesh(moveTarget) {

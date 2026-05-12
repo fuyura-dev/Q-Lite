@@ -157,6 +157,24 @@ export function createRenderer3D(container, options = {}) {
     );
   }
 
+  function isPreviewWallSlotInBounds(wallSlot, wallLength) {
+    if (!wallSlot) {
+      return false;
+    }
+
+    if (wallSlot.axis == "horizontal") {
+      return (
+        wallSlot.row < BOARD_SIZE - 1 &&
+        wallSlot.col + wallLength - 1 < BOARD_SIZE
+      );
+    }
+
+    return (
+      wallSlot.col < BOARD_SIZE - 1 &&
+      wallSlot.row + wallLength - 1 < BOARD_SIZE
+    );
+  }
+
   function getClickableMoveTarget(cell) {
     if (!latestSnapshot || !cell) {
       return null;
@@ -228,17 +246,23 @@ export function createRenderer3D(container, options = {}) {
   }
 
   function setHoveredWallSlot(wallSlot) {
-    const previewWallSlot =
-      wallSlot &&
-      ((wallSlot.axis == "horizontal" && wallSlot.col < BOARD_SIZE - 1) ||
-        (wallSlot.axis == "vertical" && wallSlot.row < BOARD_SIZE - 1))
-        ? wallSlot
-        : null;
+    const previewWallLength = getReserveWallLengthFromKey(
+      selectedReserveWallKey,
+    );
+    const previewWallSlot = isPreviewWallSlotInBounds(
+      wallSlot,
+      previewWallLength,
+    )
+      ? wallSlot
+      : null;
     const wallSlotKey = previewWallSlot
       ? `${previewWallSlot.axis}-${previewWallSlot.row}-${previewWallSlot.col}`
       : "";
 
-    if (wallSlotKey == hoveredWallSlotKey) {
+    if (
+      wallSlotKey == hoveredWallSlotKey &&
+      hoverWall.userData.wallLength == previewWallLength
+    ) {
       return;
     }
 
@@ -251,6 +275,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     hoverWall.visible = true;
+    hoverWall.userData.wallLength = previewWallLength;
     updateWallPreviewMesh(hoverWall, previewWallSlot);
     notifyWallHover(previewWallSlot);
   }
@@ -263,16 +288,23 @@ export function createRenderer3D(container, options = {}) {
       return;
     }
 
-    const previewWallSlot =
-      wallSlot &&
-      ((wallSlot.axis == "horizontal" && wallSlot.col < BOARD_SIZE - 1) ||
-        (wallSlot.axis == "vertical" && wallSlot.row < BOARD_SIZE - 1))
-        ? wallSlot
-        : null;
+    const previewWallLength = getReserveWallLengthFromKey(
+      selectedReserveWallKey,
+    );
+    const previewWallSlot = isPreviewWallSlotInBounds(
+      wallSlot,
+      previewWallLength,
+    )
+      ? wallSlot
+      : null;
     const wallSlotKey = previewWallSlot
       ? `${previewWallSlot.axis}-${previewWallSlot.row}-${previewWallSlot.col}`
       : "";
-    if (wallSlotKey == selectedWallSlotKey) {
+
+    if (
+      wallSlotKey == selectedWallSlotKey &&
+      selectedWall.userData.wallLength == previewWallLength
+    ) {
       return;
     }
 
@@ -285,6 +317,7 @@ export function createRenderer3D(container, options = {}) {
     }
 
     selectedWall.visible = true;
+    selectedWall.userData.wallLength = previewWallLength;
     updateWallPreviewMesh(selectedWall, previewWallSlot);
     notifySelectWallSlot(previewWallSlot);
   }
@@ -299,6 +332,10 @@ export function createRenderer3D(container, options = {}) {
     if (!selectedReserveWallKey) {
       setSelectedWallSlot(null);
       notifySelectReserveWall(null);
+      if (hoveredWallSlotKey) {
+        const [axis, row, col] = hoveredWallSlotKey.split("-");
+        setHoveredWallSlot({ axis, row: Number(row), col: Number(col) });
+      }
       rerenderSnapshot();
       return;
     }
@@ -307,6 +344,14 @@ export function createRenderer3D(container, options = {}) {
       key: selectedReserveWallKey,
       length: getReserveWallLengthFromKey(selectedReserveWallKey),
     });
+    if (hoveredWallSlotKey) {
+      const [axis, row, col] = hoveredWallSlotKey.split("-");
+      setHoveredWallSlot({ axis, row: Number(row), col: Number(col) });
+    }
+    if (selectedWallSlotKey) {
+      const [axis, row, col] = selectedWallSlotKey.split("-");
+      setSelectedWallSlot({ axis, row: Number(row), col: Number(col) });
+    }
     rerenderSnapshot();
   }
 
