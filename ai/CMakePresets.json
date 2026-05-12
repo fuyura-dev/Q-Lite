@@ -6,7 +6,8 @@
       "displayName": "Standalone",
       "binaryDir": "${sourceDir}/build/standalone",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "TRUE"
       }
     },
     {
@@ -16,8 +17,7 @@
       "binaryDir": "${sourceDir}/build/wasm",
       "toolchainFile": "${sourceDir}/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "FALSE"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     }
   ],

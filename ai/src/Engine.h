@@ -6,12 +6,6 @@
 
 enum MoveResult : uint8_t { kInvalid, kValid, kWin };
 
-struct Wall {
-    GridPosition pos;
-    WallSide side;
-    WallLength length;
-};
-
 class Engine {
    public:
     int GetCurrentTurn() const;

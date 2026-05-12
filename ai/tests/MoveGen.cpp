@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <ranges>
+
 class MoveGenTest : public testing::Test {
    protected:
     void Move(GridPosition player, GridPosition other) {
@@ -77,7 +80,20 @@ TEST_F(MoveGenTest, SideJump) {
 }
 
 TEST_F(MoveGenTest, All) {
-    auto moves = AllMoveList(pos);
-    auto size = std::ranges::distance(moves);
-    EXPECT_EQ(size, 3 + (kGridSize - 1) * (kGridSize - 1) * 2);
+    auto moves = AllMoveList(pos) | std::ranges::to<std::vector>();
+    auto pawns = std::ranges::count(moves, MoveKind::kMovePawn, &Move::kind);
+    auto ones = std::ranges::count_if(moves, [&](auto move) {
+        return move.kind == MoveKind::kPlaceWall && move.length == kOne;
+    });
+    auto twos = std::ranges::count_if(moves, [&](auto move) {
+        return move.kind == MoveKind::kPlaceWall && move.length == kTwo;
+    });
+    auto threes = std::ranges::count_if(moves, [&](auto move) {
+        return move.kind == MoveKind::kPlaceWall && move.length == kThree;
+    });
+
+    EXPECT_EQ(pawns, 3);
+    EXPECT_EQ(ones, kTotalCells * 2 - kGridSize * 2);
+    EXPECT_EQ(twos, (kGridSize - 1) * (kGridSize - 1) * 2);
+    EXPECT_EQ(threes, (kGridSize - 2) * (kGridSize - 1) * 2);
 }

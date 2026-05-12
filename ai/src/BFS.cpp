@@ -30,7 +30,8 @@ int8_t BFS(GridPosition start_pos, uint8_t target_row, uint64_t right_walls,
             ((visited & ~kLeftMostMask) >> 1) & ~right_walls;  // visit left
         new_visited |= ((visited & ~kBottomMostMask) << kGridSize) &
                        ~(bot_walls << kGridSize);  // visit bot
-        new_visited |= ((visited & ~kTopMostMask) >> kGridSize) & ~bot_walls;  // visit top
+        new_visited |=
+            ((visited & ~kTopMostMask) >> kGridSize) & ~bot_walls;  // visit top
         if ((visited & new_visited) == new_visited) {
             break;
         }

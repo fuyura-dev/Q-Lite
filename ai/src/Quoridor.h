@@ -35,6 +35,14 @@ enum WallSide : bool { kRightSide, kBottomSide };
 
 enum WallLength : uint8_t { kOne, kTwo, kThree };
 
+struct Wall {
+    GridPosition pos;
+    WallSide side;
+    WallLength length;
+};
+
+inline constexpr std::array kWallSides = {kRightSide, kBottomSide};
+inline constexpr std::array kWallLengths = {kOne, kTwo, kThree};
 constexpr GridPosition kStartPositions[2] = {
     {.row = kGridSize - 1, .col = kGridSize / 2},
     {.row = 0, .col = kGridSize / 2}};

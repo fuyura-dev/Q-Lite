@@ -20,7 +20,7 @@ bool Position::DoMove(const Move& move) {
     if (move.kind == MoveKind::kMovePawn) {
         return MovePawn(move.pos);
     }
-    PlaceWall(move.pos, *move.side, kTwo);
+    PlaceWall(move.pos, move.side, move.length);
     return false;
 }
 
@@ -34,10 +34,10 @@ void Position::UndoMove(const Move& move) {
     if (move.kind == MoveKind::kMovePawn) {
         pawn_positions[current_turn] = move.pos;
     } else {
-        remaining_walls[current_turn][kTwo]++;
-        walls[*move.side][kTwo] &= ~(1LL << move.pos.compress());
-        combined_walls[*move.side] &=
-            ~(kPlacedWallMask[*move.side][kTwo] << move.pos.compress());
+        remaining_walls[current_turn][move.length]++;
+        walls[move.side][move.length] &= ~(1LL << move.pos.compress());
+        combined_walls[move.side] &=
+            ~(kPlacedWallMask[move.side][move.length] << move.pos.compress());
     }
 }
 
@@ -123,11 +123,14 @@ Score Position::Evaluate() const {  // positive  if white is winning
     }
 
     auto evaluate_for = [&](Color color) -> Score {
-        auto distance = BFS(pawn_positions[color], kTargetRow[color],
-                            walls[kRightSide][kTwo], walls[kBottomSide][kTwo]);
+        auto distance =
+            BFS(pawn_positions[color], kTargetRow[color],
+                combined_walls[kRightSide], combined_walls[kBottomSide]);
 
         return (kTotalCells - distance) +
-               static_cast<Score>(remaining_walls[color][kTwo]);
+               static_cast<Score>(remaining_walls[color][kOne] +
+                                  remaining_walls[color][kTwo] +
+                                  remaining_walls[color][kThree]);
     };
 
     return evaluate_for(kWhite) - evaluate_for(kBlack);

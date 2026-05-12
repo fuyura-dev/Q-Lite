@@ -1,5 +1,6 @@
 #include "Engine.h"
 
+#include <algorithm>
 #include <ranges>
 
 #include "MoveGen.h"
@@ -20,37 +21,22 @@ int Engine::GetPlayerCol(int player) const {
 }
 
 std::vector<int> Engine::GetRemainingWalls(int player) const {
-    std::vector<int> ret;
-    for (WallLength length : {kOne, kTwo, kThree}) {
-        ret.push_back(pos.GetRemainingWalls(ToColor(player), length));
-    }
-    return ret;
+    return kWallLengths | std::views::transform([&](const auto length) {
+               return pos.GetRemainingWalls(ToColor(player), length);
+           }) |
+           std::ranges::to<std::vector<int>>();
 }
+
 std::vector<Wall> Engine::GetWalls() const {
-    std::vector<Wall> walls;
-    for (int8_t row = 0; row < kGridSize; row++) {
-        for (int8_t col = 0; col < kGridSize; col++) {
-            for (WallLength length : {kOne, kTwo, kThree}) {
-                if (pos.HasWall({row, col}, kRightSide, length)) {
-                    walls.emplace_back(GridPosition{row, col}, kRightSide,
-                                       length);
-                }
-                if (pos.HasWall({row, col}, kBottomSide, length)) {
-                    walls.emplace_back(GridPosition{row, col}, kBottomSide,
-                                       length);
-                }
-            }
-        }
-    }
-    return walls;
+    return kAllWallMoves | std::views::filter([&](const auto w) {
+               auto [grid_pos, side, length] = w;
+               return pos.HasWall(grid_pos, side, length);
+           }) |
+           std::ranges::to<std::vector>();
 }
 
 std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
-    std::vector<GridPosition> moves;
-    for (GridPosition move : PawnMoveList(pos)) {
-        moves.push_back(move);
-    }
-    return moves;
+    return PawnMoveList(pos) | std::ranges::to<std::vector>();
 }
 
 int Engine::Evaluate() const { return pos.Evaluate(); }
@@ -68,7 +54,7 @@ MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,
 
 MoveResult Engine::MovePawn(int8_t row, int8_t col) {
     auto moves = PawnMoveList(pos);
-    if (std::ranges::find(moves, GridPosition{row, col}) == moves.end()) {
+    if (!std::ranges::contains(moves, GridPosition{row, col})) {
         return kInvalid;
     }
     return pos.MovePawn({row, col}) ? kWin : kValid;
