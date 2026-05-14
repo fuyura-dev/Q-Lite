@@ -4,20 +4,33 @@
 #include "BFS.h"
 
 class BFSTest : public testing::Test {
-protected:
-	Position pos;
+   protected:
+    Position pos;
 };
 
 TEST_F(BFSTest, OppositeEnds) {
-	EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0], 0, 0), kGridSize - 1);
+    EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0], 0, 0), kGridSize - 1);
 }
 
-
 TEST_F(BFSTest, Blocked) {
-	pos.PlaceWall({ 0, 0 }, kBottomSide);
-	pos.PlaceWall({ 0, 2 }, kBottomSide);
-	pos.PlaceWall({ 0, 4 }, kBottomSide);
-	pos.PlaceWall({ 1, 5 }, kRightSide);
-	pos.PlaceWall({ 2, 5 }, kBottomSide);
-	EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0], pos.walls[kRightSide], pos.walls[kBottomSide]), kUnreachable);
+    pos.PlaceWall({0, 0}, kBottomSide, kTwo);
+    pos.PlaceWall({0, 2}, kBottomSide, kTwo);
+    pos.PlaceWall({0, 4}, kBottomSide, kTwo);
+    pos.PlaceWall({1, 5}, kRightSide, kTwo);
+    pos.PlaceWall({2, 5}, kBottomSide, kTwo);
+    EXPECT_EQ(
+        BFS(kStartPositions[0], kTargetRow[0], pos.combined_walls[kRightSide],
+            pos.combined_walls[kBottomSide]),
+        kUnreachable);
+}
+
+TEST_F(BFSTest, BlockedModif) {
+    pos.PlaceWall({0, 0}, kBottomSide, kOne);
+    pos.PlaceWall({1, 0}, kRightSide, kTwo);
+    pos.PlaceWall({2, 1}, kBottomSide, kThree);
+    pos.PlaceWall({2, 4}, kBottomSide, kThree);
+    EXPECT_EQ(
+        BFS(kStartPositions[0], kTargetRow[0], pos.combined_walls[kRightSide],
+            pos.combined_walls[kBottomSide]),
+        kUnreachable);
 }
