@@ -1,122 +1,24 @@
 #pragma once
 
-#include <iterator>
+#include <coro/generator.hpp>
+#include <range/v3/view/cartesian_product.hpp>
+#include <range/v3/view/iota.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include "Position.h"
 #include "Quoridor.h"
 
-enum class CellSide : uint8_t { kRightSide, kBottomSide, kLeftSide, kTopSide };
+inline const auto kAllWallMoves =
+    ranges::cartesian_product_view(
+        ranges::views::transform(ranges::views::iota(0, kTotalCells),
+                                 &GridPosition::from_compressed),
+        kWallSides, kWallLengths) |
+    ranges::views::transform([](const auto w) {
+        auto [grid_pos, side, length] = w;
+        return Wall{grid_pos, side, length};
+    });
 
-using CellSideVector = std::pair<CellSide, GridPosition>;
-
-inline constexpr CellSideVector kAdjacent[4] = {
-    {CellSide::kRightSide, {.row = 0, .col = 1}},
-    {CellSide::kBottomSide, {.row = 1, .col = 0}},
-    {CellSide::kLeftSide, {.row = 0, .col = -1}},
-    {CellSide::kTopSide, {.row = -1, .col = 0}}};
-
-template <typename Derived>
-class MoveListCommon {
-   public:
-    MoveListCommon(const Position& pos) : pos(pos) {}
-    auto begin() const {
-        typename Derived::Iterator it{static_cast<const Derived&>(*this)};
-        ++it;
-        return it;
-    }
-    std::default_sentinel_t end() const { return std::default_sentinel; }
-
-   protected:
-    Position pos;
-};
-
-template <typename ValueType, typename Iterator>
-class IteratorCommon {
-   public:
-    using value_type = ValueType;
-    using difference_type = ptrdiff_t;
-
-    value_type operator*() const { return ret; }
-    Iterator& operator++() {
-        Iterator& it = static_cast<Iterator&>(*this);
-        it.Advance();
-        return it;
-    }
-    void operator++(int) { this->operator++(); }
-    bool operator==(std::default_sentinel_t) const { return done; }
-
-   protected:
-    ValueType ret{};
-    bool done = false;
-};
-
-class AdjacentMoveList : public MoveListCommon<AdjacentMoveList> {
-   public:
-    AdjacentMoveList(GridPosition grid_pos, const Position& pos)
-        : MoveListCommon(pos), grid_pos(grid_pos) {}
-
-    class Iterator;
-
-   private:
-    GridPosition grid_pos;
-};
-
-class AdjacentMoveList::Iterator
-    : public IteratorCommon<GridPosition, Iterator> {
-   public:
-    void Advance();
-    Iterator(const AdjacentMoveList& move_list) : move_list(&move_list) {}
-
-   private:
-    const AdjacentMoveList* move_list;
-    const CellSideVector* current_vector = kAdjacent;
-};
-
-class PawnMoveList : public MoveListCommon<PawnMoveList> {
-   public:
-    PawnMoveList(const Position& pos);
-
-    class Iterator;
-
-   private:
-    GridPosition player, other;
-    AdjacentMoveList adjacent, jump_moves;
-};
-
-class PawnMoveList::Iterator : public IteratorCommon<GridPosition, Iterator> {
-   public:
-    void Advance();
-    Iterator(const PawnMoveList& move_list)
-        : move_list(&move_list), current(move_list.adjacent.begin()) {}
-
-   private:
-    void NextAdjacent();
-    void NextJumping();
-
-    bool straight_jump = false, jumping = false, will_jump = false;
-    const PawnMoveList* move_list;
-    AdjacentMoveList::Iterator current;
-};
-
-class AllMoveList : public MoveListCommon<AllMoveList> {
-   public:
-    AllMoveList(const Position& pos) : MoveListCommon(pos), pawn_moves(pos) {}
-
-    class Iterator;
-
-   private:
-    PawnMoveList pawn_moves;
-};
-
-class AllMoveList::Iterator : public IteratorCommon<Move, Iterator> {
-   public:
-    void Advance();
-    Iterator(const AllMoveList& move_list)
-        : move_list(&move_list), pawn_current(move_list.pawn_moves.begin()) {}
-
-   private:
-    const AllMoveList* move_list;
-    PawnMoveList::Iterator pawn_current;
-    int8_t wall_current = 0;
-    WallSide current_side = kRightSide;
-};
+coro::generator<GridPosition> AdjacentMoveList(GridPosition grid_pos,
+                                               const Position& pos);
+coro::generator<GridPosition> PawnMoveList(const Position& pos);
+coro::generator<Move> AllMoveList(const Position& pos);

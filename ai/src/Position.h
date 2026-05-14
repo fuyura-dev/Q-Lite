@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <optional>
 
 #include "Quoridor.h"
 
@@ -10,7 +9,8 @@ enum class MoveKind : uint8_t { kMovePawn, kPlaceWall };
 struct Move {
     MoveKind kind;
     GridPosition pos;
-    std::optional<WallSide> side;
+    WallSide side;
+    WallLength length;
 };
 
 using Score = int;
