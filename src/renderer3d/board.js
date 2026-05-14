@@ -8,6 +8,7 @@ import {
   BOARD_DEPTH,
   BOARD_MATERIALS,
   HALF_BOARD,
+  MAX_RESERVE_WALL_SPAN,
 } from "./constants";
 import { getCellCenter, getLaneCenter } from "./geometry";
 
@@ -93,11 +94,7 @@ export function createBoardGroup() {
 
       if (r == 0 || r == BOARD_SIZE - 1) {
         const extendedCell = new THREE.Mesh(
-          new THREE.BoxGeometry(
-            CELL_SIZE,
-            CELL_HEIGHT,
-            CELL_SIZE * 2 + LANE_SIZE,
-          ),
+          new THREE.BoxGeometry(CELL_SIZE, CELL_HEIGHT, MAX_RESERVE_WALL_SPAN),
           BOARD_MATERIALS.cell,
         );
         extendedCell.castShadow = true;
@@ -106,7 +103,7 @@ export function createBoardGroup() {
           getCellCenter(c),
           CELL_HEIGHT,
           (r === 0 ? -1 : 1) *
-            (HALF_BOARD + LANE_SIZE + (CELL_SIZE * 2 + LANE_SIZE) / 2),
+            (HALF_BOARD + LANE_SIZE + MAX_RESERVE_WALL_SPAN / 2),
         );
         boardGroup.add(extendedCell);
       }

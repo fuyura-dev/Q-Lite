@@ -58,26 +58,22 @@ const MOCK_SNAPSHOT = {
       id: 1,
       row: 6,
       col: 3,
-      wallsRemaining: 6,
+      wallsRemaining: [4, 3, 1],
     },
     {
       id: 2,
       row: 0,
       col: 3,
-      wallsRemaining: 7,
+      wallsRemaining: [4, 3, 1],
     },
   ],
   horizontalWalls: [
-    { row: 1, col: 1 },
-    { row: 1, col: 2 },
-    { row: 4, col: 3 },
-    { row: 4, col: 2 },
+    { pos: { row: 1, col: 1 }, side: 1, length: 3 },
+    { pos: { row: 4, col: 2 }, side: 1, length: 1 },
   ],
   verticalWalls: [
-    { row: 2, col: 1 },
-    { row: 3, col: 1 },
-    { row: 1, col: 5 },
-    { row: 2, col: 5 },
+    { pos: { row: 2, col: 1 }, side: 0, length: 3 },
+    { pos: { row: 1, col: 5 }, side: 0, length: 2 },
   ],
   legalPawnMoves: [
     { row: 5, col: 3 },
@@ -251,6 +247,7 @@ async function tryPlaceSelectedWall(wallSlot) {
     wallSlot.row,
     wallSlot.col,
     getWallSide(wallSlot.axis),
+    selectedReserveWall.length,
   );
 
   if (result === engine.moveResult.INVALID) {
@@ -387,8 +384,8 @@ async function createEngineSnapshot() {
         wallsRemaining: await engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: await engine.getHorizontalWalls(),
-    verticalWalls: await engine.getVerticalWalls(),
+    horizontalWalls: (await engine.getWalls()).filter(w => w.side == engine.wallSide.BOTTOM_SIDE),
+    verticalWalls: (await engine.getWalls()).filter(w => w.side == engine.wallSide.RIGHT_SIDE),
     legalPawnMoves: await engine.getLegalPawnMoves(),
     evaluation: await engine.evaluate(),
     // buildTime: engine.buildTime(),

@@ -1,76 +1,60 @@
 import { getReserveWallSlots } from "./geometry";
 
+function createReserveWallKey(playerId, length, index) {
+  return `player-${playerId}-wall-${length}-${index}`;
+}
+
+function createReserveWallKeys(playerId, wallsRemaining) {
+  const keys = [];
+  const wallCounts = wallsRemaining ?? 0;
+
+  for (let length = 1; length <= wallCounts.length; length++) {
+    const count = wallCounts[length - 1];
+
+    for (let i = 0; i < count; i++) {
+      keys.push(createReserveWallKey(playerId, length, i));
+    }
+  }
+
+  return keys;
+}
+
+export function getReserveWallLengthFromKey(reserveWallKey) {
+  const match = /-wall-(\d+)-\d+$/.exec(reserveWallKey ?? "");
+  return match ? Number(match[1]) : 2;
+}
+
 export function createReserveWallStore() {
   const reserveWallSlotsByPlayer = new Map();
-  const reserveWallIdCounters = new Map();
   let pendingPlacedReserveWallKey = "";
-
-  function ensureReserveWallKeys(playerId, count) {
-    if (!reserveWallSlotsByPlayer.has(playerId)) {
-      reserveWallSlotsByPlayer.set(playerId, []);
-      reserveWallIdCounters.set(playerId, 0);
-    }
-
-    const slots = reserveWallSlotsByPlayer.get(playerId);
-    let nextId = reserveWallIdCounters.get(playerId);
-    const filledCount = slots.filter(Boolean).length;
-
-    while (slots.length < getReserveWallSlots().length) {
-      slots.push(null);
-    }
-
-    for (
-      let i = 0;
-      i < slots.length &&
-      filledCount + (nextId - reserveWallIdCounters.get(playerId)) < count;
-      i++
-    ) {
-      if (slots[i]) {
-        continue;
-      }
-      slots[i] = `player-${playerId}-wall-${nextId}`;
-      nextId++;
-    }
-
-    reserveWallIdCounters.set(playerId, nextId);
-  }
 
   function sync(snapshot) {
     const activePlayerIds = new Set(
       snapshot.players.map((player) => player.id),
     );
+    const totalSlots = getReserveWallSlots().length;
 
     for (const player of snapshot.players) {
-      ensureReserveWallKeys(player.id, player.wallsRemaining);
-      const slots = reserveWallSlotsByPlayer.get(player.id);
-      const targetCount = player.wallsRemaining;
-      let filledCount = slots.filter(Boolean).length;
+      const nextKeys = createReserveWallKeys(player.id, player.wallsRemaining);
+      const slots = nextKeys.slice(0, totalSlots);
 
-      while (filledCount > targetCount) {
-        const selectedIndex = pendingPlacedReserveWallKey
-          ? slots.indexOf(pendingPlacedReserveWallKey)
-          : -1;
-
-        if (selectedIndex >= 0) {
-          slots[selectedIndex] = null;
-          pendingPlacedReserveWallKey = "";
-          filledCount--;
-          continue;
-        }
-
-        const lastFilledIndex = slots.findLastIndex(Boolean);
-        if (lastFilledIndex < 0) {
-          break;
-        }
-        slots[lastFilledIndex] = null;
-        filledCount--;
+      while (slots.length < totalSlots) {
+        slots.push(null);
       }
+
+      if (
+        pendingPlacedReserveWallKey &&
+        !nextKeys.includes(pendingPlacedReserveWallKey)
+      ) {
+        pendingPlacedReserveWallKey = "";
+      }
+
+      reserveWallSlotsByPlayer.set(player.id, slots);
     }
 
     for (const playerId of [...reserveWallSlotsByPlayer.keys()]) {
       if (!activePlayerIds.has(playerId)) {
         reserveWallSlotsByPlayer.delete(playerId);
-        reserveWallIdCounters.delete(playerId);
       }
     }
   }
