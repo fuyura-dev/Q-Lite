@@ -47,7 +47,7 @@ worker.onmessageerror = (event) => {
   console.log(event);
 };
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const MOCK_SNAPSHOT = {
   boardSize: 7,
@@ -247,6 +247,7 @@ async function tryPlaceSelectedWall(wallSlot) {
     wallSlot.row,
     wallSlot.col,
     getWallSide(wallSlot.axis),
+    selectedReserveWall.length,
   );
 
   if (result === engine.moveResult.INVALID) {
