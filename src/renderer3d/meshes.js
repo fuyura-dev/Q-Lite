@@ -9,7 +9,13 @@ import {
   HALF_BOARD,
   LANE_SIZE,
 } from "./constants";
-import { getCellCenter, getLaneCenter } from "./geometry";
+import {
+  getCellCenter,
+  getLaneCenter,
+  getWallSpan,
+  getWallPreviewCenter,
+} from "./geometry";
+import { getReserveWallLengthFromKey } from "./reserveWalls";
 
 export function clearGroup(group) {
   group.clear();
@@ -17,29 +23,31 @@ export function clearGroup(group) {
 
 export function createPlacedWallMesh(axis, wall) {
   const isHorizontal = axis == "horizontal";
+  const wallSpan = getWallSpan(wall.length ?? 2);
+  const center = getWallPreviewCenter(
+    { axis, row: wall.pos.row, col: wall.pos.col },
+    wall.length ?? 2,
+  );
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(
-      isHorizontal ? WALL_SPAN : WALL_THICKNESS,
+      isHorizontal ? wallSpan : WALL_THICKNESS,
       WALL_HEIGHT,
-      isHorizontal ? WALL_THICKNESS : WALL_SPAN,
+      isHorizontal ? WALL_THICKNESS : wallSpan,
     ),
     BOARD_MATERIALS.wall,
   );
 
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.position.set(
-    getLaneCenter(wall.col),
-    CELL_HEIGHT + WALL_HEIGHT / 2,
-    getLaneCenter(wall.row),
-  );
+  mesh.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
 
   return mesh;
 }
 
 export function createReserveWallMesh(reserveWallKey, isSelected = false) {
+  const wallLength = getReserveWallLengthFromKey(reserveWallKey);
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, WALL_SPAN),
+    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, getWallSpan(wallLength)),
     new THREE.MeshStandardMaterial({
       color: isSelected ? "#c8721a" : "#6b3c1a",
       roughness: isSelected ? 0.5 : 0.72,
@@ -54,6 +62,7 @@ export function createReserveWallMesh(reserveWallKey, isSelected = false) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.userData.reserveWallKey = reserveWallKey;
+  mesh.userData.wallLength = wallLength;
 
   return mesh;
 }
@@ -152,17 +161,15 @@ export function createSelectedWallMesh() {
 }
 
 export function updateWallPreviewMesh(mesh, wallSlot) {
+  const wallSpan = getWallSpan(mesh.userData.wallLength ?? 2);
+  const center = getWallPreviewCenter(wallSlot, mesh.userData.wallLength ?? 2);
   mesh.geometry.dispose();
   mesh.geometry = new THREE.BoxGeometry(
-    wallSlot.axis == "horizontal" ? WALL_SPAN : WALL_THICKNESS,
+    wallSlot.axis == "horizontal" ? wallSpan : WALL_THICKNESS,
     WALL_HEIGHT,
-    wallSlot.axis == "horizontal" ? WALL_THICKNESS : WALL_SPAN,
+    wallSlot.axis == "horizontal" ? WALL_THICKNESS : wallSpan,
   );
-  mesh.position.set(
-    getLaneCenter(wallSlot.col),
-    CELL_HEIGHT + WALL_HEIGHT / 2,
-    getLaneCenter(wallSlot.row),
-  );
+  mesh.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
 }
 
 export function createMoveTargetMesh(moveTarget) {
