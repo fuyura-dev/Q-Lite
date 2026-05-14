@@ -19,7 +19,7 @@ FetchContent_MakeAvailable(range)
 
 FetchContent_Declare(
 	libcoro
-	GIT_REPOSITORY git@github.com:jbaldwin/libcoro.git
+	GIT_REPOSITORY https://github.com/jbaldwin/libcoro.git
 	GIT_TAG main
 	GIT_SUBMODULES ""
 )
