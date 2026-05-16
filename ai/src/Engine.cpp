@@ -1,12 +1,17 @@
 #include "Engine.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdlib>
+#include <ctime>
 #include <ranges>
 
 #include "MoveGen.h"
 #include "Search.h"
 
 static Color ToColor(int player) { return player <= 1 ? kWhite : kBlack; }
+
+Engine::Engine() { std::srand(std::time({})); }
 
 int Engine::GetCurrentTurn() const {
     return static_cast<int>(pos.GetCurrentTurn()) + 1;
@@ -41,7 +46,43 @@ std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
 
 int Engine::Evaluate() const { return pos.Evaluate(); }
 
-void Engine::Reset() { pos = Position(); }
+void Engine::SetPlayerClass(int player, Class c) {
+    classes[ToColor(player)] = c;
+}
+
+constexpr std::array kClassChoose = {Class::kGhost, Class::kBuilder,
+                                     Class::kRunner};
+constexpr auto kExtraWalls = 2;
+
+std::vector<Class> Engine::StartMatch() {
+    for (Color color : {kWhite, kBlack}) {
+        if (classes[color] == Class::kRandom) {
+            classes[color] = kClassChoose[std::rand() % kClassChoose.size()];
+        }
+        SpecialState special;
+        switch (classes[color]) {
+            case Class::kGhost:
+                special.can_pass_walls = true;
+                break;
+            case Class::kBuilder:
+                special.extra_walls = kExtraWalls;
+                break;
+            case Class::kRunner:
+                special.can_move_two_tiles = true;
+                special.move_two_tiles_available = true;
+                break;
+            default:
+                break;
+        }
+        pos.GetSpecialState(color) = special;
+    }
+    return classes;
+}
+
+void Engine::Reset() {
+    pos = Position();
+    classes = {Class::kGhost, Class::kGhost};  // temporary
+}
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,
                              WallLength length) {

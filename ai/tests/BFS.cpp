@@ -18,10 +18,12 @@ TEST_F(BFSTest, Blocked) {
     pos.PlaceWall({0, 4}, kBottomSide, kTwo);
     pos.PlaceWall({1, 5}, kRightSide, kTwo);
     pos.PlaceWall({2, 5}, kBottomSide, kTwo);
-    EXPECT_EQ(
-        BFS(kStartPositions[0], kTargetRow[0], pos.combined_walls[kRightSide],
-            pos.combined_walls[kBottomSide]),
-        kUnreachable);
+    EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0],
+                  pos.combined_walls[kWhite][kRightSide] |
+                      pos.combined_walls[kBlack][kRightSide],
+                  pos.combined_walls[kWhite][kBottomSide] |
+                      pos.combined_walls[kBlack][kBottomSide]),
+              kUnreachable);
 }
 
 TEST_F(BFSTest, BlockedModif) {
@@ -29,8 +31,10 @@ TEST_F(BFSTest, BlockedModif) {
     pos.PlaceWall({1, 0}, kRightSide, kTwo);
     pos.PlaceWall({2, 1}, kBottomSide, kThree);
     pos.PlaceWall({2, 4}, kBottomSide, kThree);
-    EXPECT_EQ(
-        BFS(kStartPositions[0], kTargetRow[0], pos.combined_walls[kRightSide],
-            pos.combined_walls[kBottomSide]),
-        kUnreachable);
+    EXPECT_EQ(BFS(kStartPositions[0], kTargetRow[0],
+                  pos.combined_walls[kWhite][kRightSide] |
+                      pos.combined_walls[kBlack][kRightSide],
+                  pos.combined_walls[kWhite][kBottomSide] |
+                      pos.combined_walls[kBlack][kBottomSide]),
+              kUnreachable);
 }

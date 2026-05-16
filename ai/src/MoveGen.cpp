@@ -1,6 +1,7 @@
 #include "MoveGen.h"
 
 #include <algorithm>
+#include <functional>
 
 enum class CellSide : uint8_t { kRightSide, kBottomSide, kLeftSide, kTopSide };
 
@@ -30,10 +31,15 @@ bool HasWall(const Position& pos, GridPosition wall_pos,
              const CellSideVector& cell_side_vector) {
     auto [side, vector] = cell_side_vector;
     WallSide wall_side = ToWallSide(side);
-    if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
-        return pos.HasWall(wall_pos, wall_side);
+    auto has_wall = &Position::HasWallBoth;
+    if (pos.GetSpecialState(pos.GetCurrentTurn()).can_pass_walls) {
+        has_wall = &Position::HasWallBuiltByEnemy;
     }
-    return pos.HasWall(wall_pos + vector, wall_side);
+
+    if (side == CellSide::kRightSide || side == CellSide::kBottomSide) {
+        return std::invoke(has_wall, pos, wall_pos, wall_side);
+    }
+    return std::invoke(has_wall, pos, wall_pos + vector, wall_side);
 }
 
 }  // namespace

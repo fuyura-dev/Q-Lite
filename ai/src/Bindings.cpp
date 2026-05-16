@@ -30,7 +30,8 @@ EMSCRIPTEN_BINDINGS(engine) {
         .function("movePawn", &Engine::MovePawn)
         .function("doBestMove", &Engine::DoBestMove)
         .function("reset", &Engine::Reset)
-        .function("evaluate", &Engine::Evaluate);
+        .function("evaluate", &Engine::Evaluate)
+        .function("startMatch", &Engine::StartMatch);
 
     constant("BUILD_TIME", std::string(__DATE__ " " __TIME__));
 
@@ -46,6 +47,7 @@ EMSCRIPTEN_BINDINGS(engine) {
     register_vector<int>("VectorInt");
     register_vector<Wall>("VectorWall");
     register_vector<GridPosition>("VectorGridPos");
+    register_vector<Class>("VectorClass");
 
     enum_<WallSide>("wallSide", enum_value_type::number)
         .value("RIGHT_SIDE", kRightSide)
@@ -55,4 +57,10 @@ EMSCRIPTEN_BINDINGS(engine) {
         .value("INVALID", kInvalid)
         .value("VALID", kValid)
         .value("WIN", kWin);
+
+    enum_<Class>("class", enum_value_type::number)
+        .value("RANDOM", Class::kRandom)
+        .value("GHOST", Class::kGhost)
+        .value("BUILDER", Class::kBuilder)
+        .value("RUNNER", Class::kRunner);
 }
