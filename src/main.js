@@ -1,5 +1,11 @@
 import { createRenderer3D } from "./renderer3d.js";
 
+const gameStage = document.querySelector(".game-stage");
+const mainMenu = document.getElementById("main-menu");
+const startGameButton = document.getElementById("start-game-button");
+const mainMenuButton = document.getElementById("main-menu-button");
+const menuModeButtons = [...document.querySelectorAll("[data-menu-mode]")];
+
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
 const modeSelect = document.getElementById("mode-select");
@@ -30,6 +36,7 @@ let aiTurnInProgress = false;
 let aiAutoplayEnabled = true;
 let aiLoopToken = 0;
 let latestSnapshot = null;
+let gameStarted = false;
 
 let buildTime = "";
 
@@ -135,6 +142,7 @@ function isAiControlledTurn(snapshot) {
 }
 
 function canHumanInteract(snapshot) {
+  if (!gameStarted) return false;
   if (!snapshot) return false;
   if (isGameOver(snapshot) || aiTurnInProgress) return false;
   return !isAiControlledTurn(snapshot);
@@ -159,7 +167,7 @@ function blockInteraction(message) {
 async function maybeRunAiTurn(options = {}) {
   const { singleStep = false } = options;
 
-  if (USE_MOCK || !engine || aiTurnInProgress) {
+  if (!gameStarted || USE_MOCK || !engine || aiTurnInProgress) {
     return;
   }
 
@@ -384,8 +392,12 @@ async function createEngineSnapshot() {
         wallsRemaining: await engine.getRemainingWalls(2),
       },
     ],
-    horizontalWalls: (await engine.getWalls()).filter(w => w.side == engine.wallSide.BOTTOM_SIDE),
-    verticalWalls: (await engine.getWalls()).filter(w => w.side == engine.wallSide.RIGHT_SIDE),
+    horizontalWalls: (await engine.getWalls()).filter(
+      (w) => w.side == engine.wallSide.BOTTOM_SIDE,
+    ),
+    verticalWalls: (await engine.getWalls()).filter(
+      (w) => w.side == engine.wallSide.RIGHT_SIDE,
+    ),
     legalPawnMoves: await engine.getLegalPawnMoves(),
     evaluation: await engine.evaluate(),
     // buildTime: engine.buildTime(),
@@ -451,6 +463,11 @@ function updateControlState(snapshot) {
     aiStepButton.disabled =
       !aiModeEnabled || !snapshot || gameOver || aiTurnInProgress || !aiTurn;
   }
+
+  if (startGameButton) {
+    startGameButton.disabled = !engine;
+    startGameButton.textContent = engine ? "Start Game" : "Loading Engine";
+  }
 }
 
 async function refresh() {
@@ -462,6 +479,53 @@ async function refresh() {
   });
   updateStatus(snapshot);
   updateControlState(snapshot);
+}
+
+function syncMenuModeButtons() {
+  for (const button of menuModeButtons) {
+    const isSelected = button.dataset.menuMode == modeSelect?.value;
+    button.classList.toggle("is-selected", isSelected);
+  }
+}
+
+function clearSelections() {
+  selectedMoveTargetLabel = "Selected Move Target: none";
+  selectedWallLabel = "Selected Wall: none";
+  selectedReserveWallLabel = "Selected Reserve Wall: none";
+  selectedCellLabel = "Selected Cell: none";
+  selectedReserveWall = null;
+  renderer.clearMoveSelection();
+  renderer.clearWallPlacementSelection();
+}
+
+async function resetCurrentGame(actionLabel) {
+  cancelAiLoop();
+  if (engine) {
+    await engine.reset();
+  }
+  actionStatusLabel = actionLabel;
+  clearSelections();
+  await refresh();
+}
+
+async function startGame() {
+  if (!engine) {
+    return;
+  }
+
+  gameStarted = true;
+  gameStage?.classList.add("is-playing");
+  await resetCurrentGame("Action: game started");
+  await maybeRunAiTurn();
+}
+
+async function showMainMenu() {
+  gameStarted = false;
+  cancelAiLoop();
+  gameStage?.classList.remove("is-playing");
+  actionStatusLabel = "Action: returned to main menu";
+  clearSelections();
+  await refresh();
 }
 
 function createEngineProxy(wasmModule) {
@@ -522,8 +586,28 @@ modeSelect?.addEventListener("change", async () => {
   actionStatusLabel = "Action: mode changed";
   renderer.clearMoveSelection();
   renderer.clearWallPlacementSelection();
+  syncMenuModeButtons();
   refresh();
   await maybeRunAiTurn();
+});
+
+for (const button of menuModeButtons) {
+  button.addEventListener("click", () => {
+    if (!modeSelect) {
+      return;
+    }
+
+    modeSelect.value = button.dataset.menuMode;
+    modeSelect.dispatchEvent(new Event("change"));
+  });
+}
+
+startGameButton?.addEventListener("click", () => {
+  startGame();
+});
+
+mainMenuButton?.addEventListener("click", () => {
+  showMainMenu();
 });
 
 aiToggleButton?.addEventListener("click", async () => {
@@ -545,21 +629,10 @@ aiStepButton?.addEventListener("click", async () => {
 });
 
 restartButton?.addEventListener("click", async () => {
-  cancelAiLoop();
-  if (engine) {
-    await engine.reset();
-  }
-  actionStatusLabel = "Action: game restarted";
-  selectedMoveTargetLabel = "Selected Move Target: none";
-  selectedWallLabel = "Selected Wall: none";
-  selectedReserveWallLabel = "Selected Reserve Wall: none";
-  selectedCellLabel = "Selected Cell: none";
-  selectedReserveWall = null;
-  renderer.clearMoveSelection();
-  renderer.clearWallPlacementSelection();
-  await refresh();
+  await resetCurrentGame("Action: game restarted");
   await maybeRunAiTurn();
 });
 
+syncMenuModeButtons();
 refresh();
 initializeEngine();
