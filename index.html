@@ -9,6 +9,45 @@
   <body>
     <main class="game-stage">
       <div id="board-viewport" class="board-viewport"></div>
+      <div id="main-menu" class="main-menu">
+        <div class="main-menu__content">
+          <h1 id="main-menu-title" class="main-menu__title">AI Naku</h1>
+          <p class="main-menu__summary">
+            Race to the far side, cut routes with limited waqlls, and outthink
+            the board before it closes around you.
+          </p>
+          <div class="main-menu__modes">
+            <button
+              class="mode-card is-selected"
+              type="button"
+              data-menu-mode="human-vs-human"
+            >
+              <span class="mode-card__title">Human vs Human</span>
+              <span class="mode-card__text"
+                >Two local players, same board.</span
+              >
+            </button>
+            <button
+              class="mode-card"
+              type="button"
+              data-menu-mode="human-vs-ai"
+            >
+              <span class="mode-card__title">Human vs AI</span>
+              <span class="mode-card__text">Player 1 faces the computer.</span>
+            </button>
+            <button class="mode-card" type="button" data-menu-mode="ai-vs-ai">
+              <span class="mode-card__title">AI vs AI</span>
+              <span class="mode-card__text">Watch both sides calculate.</span>
+            </button>
+          </div>
+
+          <div class="main-menu__actions">
+            <button id="start-game-button" class="start-button">
+              Start Game
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="game-ui">
         <header class="game-hud">
           <div class="game-hud__brand">
@@ -27,6 +66,7 @@
             <button id="ai-toggle-button" type="button">Start AI</button>
             <button id="ai-step-button" type="button">Next Move</button>
             <button id="restart-button" type="button">Restart</button>
+            <button id="main-menu-button" type="button">Main Menu</button>
           </div>
         </header>
 
