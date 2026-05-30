@@ -476,6 +476,7 @@ async function refresh() {
   renderer.render(snapshot, {
     mode: modeSelect.value,
     engineStatus,
+    menuActive: !gameStarted,
   });
   updateStatus(snapshot);
   updateControlState(snapshot);

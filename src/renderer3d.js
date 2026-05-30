@@ -42,6 +42,9 @@ export function createRenderer3D(container, options = {}) {
   }
   container.replaceChildren();
 
+  const FULL_TURN = Math.PI * 2;
+  const MENU_ROTATION_SPEED = 0.18;
+
   const { scene, camera, renderer, controls } = createSceneBundle(container);
 
   const raycaster = new THREE.Raycaster();
@@ -96,6 +99,13 @@ export function createRenderer3D(container, options = {}) {
     return snapshot.currentTurn == 2 ? Math.PI : 0;
   }
 
+  function getNearestRotation(currentRotation, targetRotation) {
+    const fullTurns = Math.round(
+      (currentRotation - targetRotation) / FULL_TURN,
+    );
+    return targetRotation + fullTurns * FULL_TURN;
+  }
+
   function resizeRenderer() {
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -104,7 +114,7 @@ export function createRenderer3D(container, options = {}) {
     camera.updateProjectionMatrix();
 
     renderer.setSize(width, height);
-    render();
+    render(latestSnapshot, latestRenderOptions);
   }
   resizeRenderer();
 
@@ -466,17 +476,32 @@ export function createRenderer3D(container, options = {}) {
 
   function animate() {
     animationFrameId = window.requestAnimationFrame(animate);
-    controls.update(clock.getDelta());
+    const delta = clock.getDelta();
+    controls.update(delta);
+
+    if (latestRenderOptions.menuActive) {
+      worldGroup.rotation.y =
+        (worldGroup.rotation.y + delta * MENU_ROTATION_SPEED) % FULL_TURN;
+      renderer.render(scene, camera);
+      return;
+    }
     const targetRotation = getTargetBoardRotation(
       latestSnapshot,
       latestRenderOptions,
     );
-    worldGroup.rotation.y += (targetRotation - worldGroup.rotation.y) * 0.05;
+    const nearestTargetRotation = getNearestRotation(
+      worldGroup.rotation.y,
+      targetRotation,
+    );
+    worldGroup.rotation.y +=
+      (nearestTargetRotation - worldGroup.rotation.y) * 0.05;
     renderer.render(scene, camera);
   }
   animate();
 
   function render(snapshot, options = {}) {
+    latestRenderOptions = options;
+
     if (!snapshot) {
       latestSnapshot = null;
       setHoveredCell(null);
@@ -485,7 +510,6 @@ export function createRenderer3D(container, options = {}) {
     }
 
     latestSnapshot = snapshot;
-    latestRenderOptions = options;
     reserveWallStore.sync(snapshot);
 
     clearGroup(pawnGroup);
