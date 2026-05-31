@@ -41,7 +41,8 @@ std::vector<Wall> Engine::GetWalls() const {
 }
 
 std::vector<GridPosition> Engine::GetLegalPawnMoves() const {
-    return PawnMoveList(pos) | std::ranges::to<std::vector>();
+    return AllPawnMoveList(pos) | std::views::transform(&Move::pos) |
+           std::ranges::to<std::vector>();
 }
 
 int Engine::Evaluate() const { return pos.Evaluate(); }
@@ -79,9 +80,11 @@ std::vector<Class> Engine::StartMatch() {
     return classes;
 }
 
+void Engine::RestartMatch() { pos = Position(); }
+
 void Engine::Reset() {
     pos = Position();
-    classes = {Class::kBuilder, Class::kBuilder};  // temporary
+    classes = {Class::kRandom, Class::kRandom};
 }
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,
@@ -94,14 +97,17 @@ MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,
 }
 
 MoveResult Engine::MovePawn(int8_t row, int8_t col) {
-    auto moves = PawnMoveList(pos);
-    if (!std::ranges::contains(moves, GridPosition{row, col})) {
+    auto moves = AllPawnMoveList(pos);
+    const auto iter =
+        std::ranges::find(moves, GridPosition{row, col}, &Move::pos);
+    if (iter == moves.end()) {
         return kInvalid;
     }
-    return pos.MovePawn({row, col}) ? kWin : kValid;
+
+    return pos.MovePawn({row, col}, iter->use_move_two_tiles) ? kWin : kValid;
 }
 
 MoveResult Engine::DoBestMove() {
     Move best_move = DoSearch(pos);
-    return pos.DoMove(best_move) ? kWin : kValid;
+    return pos.DoMove(best_move, nullptr) ? kWin : kValid;
 }

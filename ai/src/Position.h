@@ -11,7 +11,7 @@ struct Move {
     GridPosition pos;
     WallSide side;
     WallLength length;
-    bool use_extra_wall;
+    bool use_move_two_tiles;
 };
 
 using Score = int;
@@ -25,10 +25,10 @@ struct SpecialState {
 
 class Position {
    public:
-    bool DoMove(const Move& move);
-    void UndoMove(const Move& move);
+    bool DoMove(const Move& move, SpecialState* state);
+    void UndoMove(const Move& move, SpecialState state);
 
-    bool MovePawn(GridPosition pos);
+    bool MovePawn(GridPosition pos, bool move_two_tiles);
     void PlaceWall(GridPosition pos, WallSide side, WallLength length);
 
     Color GetCurrentTurn() const;

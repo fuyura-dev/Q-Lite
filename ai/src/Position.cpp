@@ -16,9 +16,12 @@ uint8_t Position::GetRemainingWalls(Color player, WallLength length) const {
     return remaining_walls[player][length];
 }
 
-bool Position::DoMove(const Move& move) {
+bool Position::DoMove(const Move& move, SpecialState* state) {
+    if (state) {
+        *state = special_states[current_turn];
+    }
     if (move.kind == MoveKind::kMovePawn) {
-        return MovePawn(move.pos);
+        return MovePawn(move.pos, move.use_move_two_tiles);
     }
     PlaceWall(move.pos, move.side, move.length);
     return false;
@@ -29,14 +32,13 @@ constexpr std::array kPlacedWallMask = {
                1LL | (1LL << kGridSize) | (1LL << (2 * kGridSize))},
     std::array{0b1LL, 0b11LL, 0b111LL}};
 
-void Position::UndoMove(const Move& move) {
+void Position::UndoMove(const Move& move, SpecialState state) {
     ChangeTurn();
+    special_states[current_turn] = state;
     if (move.kind == MoveKind::kMovePawn) {
         pawn_positions[current_turn] = move.pos;
     } else {
-        if (move.use_extra_wall) {
-            GetSpecialState(GetCurrentTurn()).extra_walls++;
-        } else {
+        if (!special_states[current_turn].extra_walls) {
             remaining_walls[current_turn][move.length]++;
         }
         walls[move.side][move.length] &= ~(1LL << move.pos.compress());
@@ -45,8 +47,12 @@ void Position::UndoMove(const Move& move) {
     }
 }
 
-bool Position::MovePawn(GridPosition pos) {
+bool Position::MovePawn(GridPosition pos, bool move_two_tiles) {
     pawn_positions[current_turn] = pos;
+    SpecialState& state = special_states[current_turn];
+    if (state.can_move_two_tiles) {
+        state.move_two_tiles_available = !move_two_tiles;
+    }
     if (pos.row == kTargetRow[current_turn]) {
         ChangeTurn();
         return true;
@@ -59,11 +65,16 @@ void Position::PlaceWall(GridPosition pos, WallSide side, WallLength length) {
     walls[side][length] |= 1LL << pos.compress();
     combined_walls[GetCurrentTurn()][side] |= kPlacedWallMask[side][length]
                                               << pos.compress();
-    SpecialState& state = GetSpecialState(GetCurrentTurn());
+    SpecialState& state = special_states[current_turn];
+
     if (state.extra_walls) {
         state.extra_walls--;
     } else {
         remaining_walls[current_turn][length]--;
+    }
+
+    if (special_states[current_turn].can_move_two_tiles) {
+        special_states[current_turn].move_two_tiles_available = true;
     }
     ChangeTurn();
 }

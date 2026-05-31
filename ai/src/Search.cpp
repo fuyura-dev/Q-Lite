@@ -29,10 +29,11 @@ SearchResult AlphaBetaMax(Position &pos, Bounds bounds, Move &best_move,
                     pos.GetPawnPosition(pos.GetCurrentTurn())};
     int min_evaluated = kMaxDepth;
     for (const auto move : AllMoveList(pos)) {
-        pos.DoMove(move);
+        SpecialState state;
+        pos.DoMove(move, &state);
         auto [score, evaluated_at] =
             AlphaBetaMin(pos, bounds, best_move, depth + 1);
-        pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
+        pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore, state);
 
         if (bounds.alpha < score ||
             (score == bounds.alpha && evaluated_at < min_evaluated)) {
@@ -59,10 +60,11 @@ SearchResult AlphaBetaMin(Position &pos, Bounds bounds, Move &best_move,
                     pos.GetPawnPosition(pos.GetCurrentTurn())};
     int min_evaluated = kMaxDepth;
     for (const auto move : AllMoveList(pos)) {
-        pos.DoMove(move);
+        SpecialState state;
+        pos.DoMove(move, &state);
         auto [score, evaluated_at] =
             AlphaBetaMax(pos, bounds, best_move, depth + 1);
-        pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore);
+        pos.UndoMove(move.kind == MoveKind::kPlaceWall ? move : restore, state);
 
         if (score < bounds.beta ||
             (score == bounds.beta && evaluated_at < min_evaluated)) {
