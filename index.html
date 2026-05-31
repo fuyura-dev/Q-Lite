@@ -11,40 +11,166 @@
       <div id="board-viewport" class="board-viewport"></div>
       <div id="main-menu" class="main-menu">
         <div class="main-menu__content">
-          <h1 id="main-menu-title" class="main-menu__title">AI Naku</h1>
-          <p class="main-menu__summary">
-            Race to the far side, cut routes with limited walls, and outthink
-            the board before it closes around you.
-          </p>
-          <div class="main-menu__modes">
-            <button
-              class="mode-card is-selected"
-              type="button"
-              data-menu-mode="human-vs-human"
-            >
-              <span class="mode-card__title">Human vs Human</span>
-              <span class="mode-card__text"
-                >Two local players, same board.</span
+          <div class="main-menu__left">
+            <h1 id="main-menu-title" class="main-menu__title">AI Naku</h1>
+            <p class="main-menu__summary">
+              Race to the far side, cut routes with limited walls, and outthink
+              the board before it closes around you.
+            </p>
+            <div class="main-menu__modes">
+              <button
+                class="mode-card is-selected"
+                type="button"
+                data-menu-mode="human-vs-human"
               >
-            </button>
-            <button
-              class="mode-card"
-              type="button"
-              data-menu-mode="human-vs-ai"
-            >
-              <span class="mode-card__title">Human vs AI</span>
-              <span class="mode-card__text">Player 1 faces the computer.</span>
-            </button>
-            <button class="mode-card" type="button" data-menu-mode="ai-vs-ai">
-              <span class="mode-card__title">AI vs AI</span>
-              <span class="mode-card__text">Watch both sides calculate.</span>
-            </button>
+                <span class="mode-card__title">Human vs Human</span>
+                <span class="mode-card__text"
+                  >Two local players, same board.</span
+                >
+              </button>
+              <button
+                class="mode-card"
+                type="button"
+                data-menu-mode="human-vs-ai"
+              >
+                <span class="mode-card__title">Human vs AI</span>
+                <span class="mode-card__text"
+                  >Player 1 faces the computer.</span
+                >
+              </button>
+              <button class="mode-card" type="button" data-menu-mode="ai-vs-ai">
+                <span class="mode-card__title">AI vs AI</span>
+                <span class="mode-card__text">Watch both sides calculate.</span>
+              </button>
+            </div>
+
+            <div class="class-select">
+              <div class="class-select__group" data-class-group="1">
+                <h2 class="class-select__title" data-class-group-title="1">
+                  Player 1 Class
+                </h2>
+                <div class="class-select__options">
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="1"
+                    data-class-id="builder"
+                    data-class-title="Builder"
+                    data-class-tagline="Wall control"
+                    data-class-description="A sturdy tactician built around space control, defense, and careful wall pressure."
+                  >
+                    <span class="class-card__name">Builder</span>
+                    <span class="class-card__tagline">Wall control</span>
+                  </button>
+
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="1"
+                    data-class-id="runner"
+                    data-class-title="Runner"
+                    data-class-tagline="Fast movement"
+                    data-class-description="A light-footed pawn made for clean routes, quick pressure, and sudden lane changes."
+                  >
+                    <span class="class-card__name">Runner</span>
+                    <span class="class-card__tagline">Fast movement</span>
+                  </button>
+
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="1"
+                    data-class-id="ghost"
+                    data-class-title="Ghost"
+                    data-class-tagline="Silent routes"
+                    data-class-description="A masked scout trained to slip through pressure, mislead defenders, and find hidden openings."
+                  >
+                    <span class="class-card__name">Ghost</span>
+                    <span class="class-card__tagline">Silent routes</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="class-select__group" data-class-group="2">
+                <h2 class="class-select__title" data-class-group-title="2">
+                  Player 2 Class
+                </h2>
+                <div class="class-select__options">
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="2"
+                    data-class-id="builder"
+                    data-class-title="Builder"
+                    data-class-tagline="Wall control"
+                    data-class-description="A sturdy tactician built around space control, defense, and careful wall pressure."
+                  >
+                    <span class="class-card__name">Builder</span>
+                    <span class="class-card__tagline">Wall control</span>
+                  </button>
+
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="2"
+                    data-class-id="runner"
+                    data-class-title="Runner"
+                    data-class-tagline="Fast movement"
+                    data-class-description="A light-footed pawn made for clean routes, quick pressure, and sudden lane changes."
+                  >
+                    <span class="class-card__name">Runner</span>
+                    <span class="class-card__tagline">Fast movement</span>
+                  </button>
+
+                  <button
+                    class="class-card"
+                    type="button"
+                    data-class-choice
+                    data-class-choice-player="2"
+                    data-class-id="ghost"
+                    data-class-title="Ghost"
+                    data-class-tagline="Silent routes"
+                    data-class-description="A masked scout trained to slip through pressure, mislead defenders, and find hidden openings."
+                  >
+                    <span class="class-card__name">Ghost</span>
+                    <span class="class-card__tagline">Silent routes</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="main-menu__actions">
+              <button id="start-game-button" class="start-button">
+                Start Game
+              </button>
+            </div>
           </div>
 
-          <div class="main-menu__actions">
-            <button id="start-game-button" class="start-button">
-              Start Game
-            </button>
+          <div id="class-preview" class="class-preview">
+            <div
+              id="class-preview-viewport"
+              class="class-preview__viewport"
+            ></div>
+            <div class="class-preview__copy">
+              <p class="class-preview__player" id="class-preview-player">
+                Player 1
+              </p>
+              <h2 class="class-preview__title" id="class-preview-title">
+                Builder
+              </h2>
+              <p
+                class="class-preview__description"
+                id="class-preview-description"
+              >
+                A sturdy tactician built around space control, defense, and
+                careful wall pressure.
+              </p>
+            </div>
           </div>
         </div>
       </div>

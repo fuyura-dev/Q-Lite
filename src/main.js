@@ -1,10 +1,25 @@
 import { createRenderer3D } from "./renderer3d.js";
+import { createClassPreviewRenderer } from "./renderer3d/classPreview.js";
 
 const gameStage = document.querySelector(".game-stage");
 const mainMenu = document.getElementById("main-menu");
 const startGameButton = document.getElementById("start-game-button");
 const mainMenuButton = document.getElementById("main-menu-button");
 const menuModeButtons = [...document.querySelectorAll("[data-menu-mode]")];
+const classChoiceButtons = [
+  ...document.querySelectorAll("[data-class-choice]"),
+];
+const classGroupTitles = [
+  ...document.querySelectorAll("[data-class-group-title]"),
+];
+const playerTwoClassGroup = document.querySelector('[data-class-group="2"]');
+const classPreviewPanel = document.getElementById("class-preview");
+const classPreviewViewport = document.getElementById("class-preview-viewport");
+const classPreviewPlayer = document.getElementById("class-preview-player");
+const classPreviewTitle = document.getElementById("class-preview-title");
+const classPreviewDescription = document.getElementById(
+  "class-preview-description",
+);
 
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
@@ -20,6 +35,9 @@ const infoPlayerTwoWalls = document.getElementById("info-player-two-walls");
 const devInfoText = document.getElementById("dev-info-text");
 
 const boardViewport = document.getElementById("board-viewport");
+const classPreview = classPreviewViewport
+  ? createClassPreviewRenderer(classPreviewViewport)
+  : null;
 
 let engine = null;
 let engineStatus = "Loading Engine...";
@@ -115,6 +133,65 @@ function isAiVsAiMode() {
 function getModeLabel() {
   if (isAiVsAiMode()) return "AI vs AI";
   return isHumanVsAiMode() ? "Human vs AI" : "Human vs Human";
+}
+
+function getClassGroupLabel(playerId) {
+  if (isAiVsAiMode()) {
+    return `AI ${playerId} Class`;
+  }
+
+  if (isHumanVsAiMode()) {
+    return playerId == 1 ? "Your Class" : "AI Class";
+  }
+
+  return `Player ${playerId} Class`;
+}
+
+function syncClassChoiceButtons() {
+  for (const button of classChoiceButtons) {
+    const playerId = Number(button.dataset.classChoicePlayer);
+    const isSelected =
+      selectedPlayerClasses[playerId] == button.dataset.classId;
+    button.classList.toggle("is-selected", isSelected);
+  }
+}
+
+function syncClassSelectionVisibility() {
+  const isHumanVsAi = isHumanVsAiMode();
+
+  playerTwoClassGroup?.classList.toggle("is-hidden", isHumanVsAi);
+
+  for (const title of classGroupTitles) {
+    title.textContent = getClassGroupLabel(
+      Number(title.dataset.classGroupTitle),
+    );
+  }
+}
+
+function showClassPreview(button) {
+  const playerId = Number(button.dataset.classChoicePlayer);
+  const classId = button.dataset.classId;
+
+  classPreviewPanel?.classList.add("is-visible");
+
+  if (classPreviewPlayer) {
+    classPreviewPlayer.textContent = getClassGroupLabel(playerId);
+  }
+
+  if (classPreviewTitle) {
+    classPreviewTitle.textContent = button.dataset.classTitle ?? classId;
+  }
+
+  if (classPreviewDescription) {
+    classPreviewDescription.textContent = button.dataset.classDescription ?? "";
+  }
+
+  classPreview?.show({ playerId, classId });
+}
+
+function hideClassPreview() {
+  classPreviewPanel?.classList.remove("is-visible");
+  classPreview?.hide();
 }
 
 function getWinner(snapshot) {
@@ -494,6 +571,8 @@ function syncMenuModeButtons() {
     const isSelected = button.dataset.menuMode == modeSelect?.value;
     button.classList.toggle("is-selected", isSelected);
   }
+
+  syncClassSelectionVisibility();
 }
 
 function clearSelections() {
@@ -521,6 +600,7 @@ async function startGame() {
     return;
   }
 
+  hideClassPreview();
   gameStarted = true;
   gameStage?.classList.add("is-playing");
   await resetCurrentGame("Action: game started");
@@ -594,6 +674,7 @@ modeSelect?.addEventListener("change", async () => {
   actionStatusLabel = "Action: mode changed";
   renderer.clearMoveSelection();
   renderer.clearWallPlacementSelection();
+  hideClassPreview();
   syncMenuModeButtons();
   refresh();
   await maybeRunAiTurn();
@@ -607,6 +688,30 @@ for (const button of menuModeButtons) {
 
     modeSelect.value = button.dataset.menuMode;
     modeSelect.dispatchEvent(new Event("change"));
+  });
+}
+
+for (const button of classChoiceButtons) {
+  button.addEventListener("click", () => {
+    const playerId = Number(button.dataset.classChoicePlayer);
+    selectedPlayerClasses[playerId] = button.dataset.classId;
+    syncClassChoiceButtons();
+  });
+
+  button.addEventListener("pointerenter", () => {
+    showClassPreview(button);
+  });
+
+  button.addEventListener("focus", () => {
+    showClassPreview(button);
+  });
+
+  button.addEventListener("pointerleave", () => {
+    hideClassPreview();
+  });
+
+  button.addEventListener("blur", () => {
+    hideClassPreview();
   });
 }
 
@@ -642,5 +747,6 @@ restartButton?.addEventListener("click", async () => {
 });
 
 syncMenuModeButtons();
+syncClassChoiceButtons();
 refresh();
 initializeEngine();
