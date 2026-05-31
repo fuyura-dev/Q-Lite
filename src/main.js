@@ -642,6 +642,7 @@ async function resetCurrentGame(actionLabel) {
   cancelAiLoop();
   if (engine) {
     await engine.reset();
+    await engine.startMatch(); // TODO: temporary
   }
   actionStatusLabel = actionLabel;
   clearSelections();
