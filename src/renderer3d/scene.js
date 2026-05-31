@@ -31,10 +31,14 @@ export function createSceneBundle(container) {
   const keyLight = new THREE.DirectionalLight("#ffffff", 1.85);
   keyLight.position.set(7, 11, 6);
   keyLight.castShadow = true;
-  keyLight.shadow.camera.left = -8;
-  keyLight.shadow.camera.right = 8;
-  keyLight.shadow.camera.top = 8;
-  keyLight.shadow.camera.bottom = -8;
+  keyLight.shadow.camera.left = -18;
+  keyLight.shadow.camera.right = 18;
+  keyLight.shadow.camera.top = 18;
+  keyLight.shadow.camera.bottom = -18;
+  keyLight.shadow.camera.near = 0.5;
+  keyLight.shadow.camera.far = 34;
+  keyLight.shadow.bias = -0.0002;
+  keyLight.shadow.normalBias = 0.04;
   keyLight.shadow.mapSize.width = 2048;
   keyLight.shadow.mapSize.height = 2048;
   scene.add(keyLight);

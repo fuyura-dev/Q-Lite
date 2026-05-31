@@ -8,6 +8,7 @@ import {
   getReserveWallPosition,
 } from "./renderer3d/geometry";
 import { createSceneBundle } from "./renderer3d/scene";
+import { createFloatingIsland } from "./renderer3d/island";
 import {
   clearGroup,
   createPlacedWallMesh,
@@ -75,6 +76,7 @@ export function createRenderer3D(container, options = {}) {
   const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
     createBoardGroup();
   if (!DEV_PAWN_VIEWER) {
+    worldGroup.add(createFloatingIsland());
     worldGroup.add(boardGroup);
   }
   const placedWallGroup = new THREE.Group();
