@@ -88,9 +88,47 @@ coro::generator<GridPosition> PawnMoveList(const Position& pos) {
     }
 }
 
-coro::generator<Move> AllMoveList(const Position& pos) {
+coro::generator<GridPosition> DoublePawnMoveList(const Position& pos) {
+    GridPosition grid_pos = pos.GetPawnPosition(pos.GetCurrentTurn());
+
+    for (auto current_vector : kAdjacent) {
+        GridPosition new_grid_pos = grid_pos + current_vector.second;
+        if (InBounds(new_grid_pos) && !HasWall(pos, grid_pos, current_vector)) {
+            new_grid_pos = new_grid_pos + current_vector.second;
+            if (InBounds(new_grid_pos) &&
+                !HasWall(pos, grid_pos, current_vector)) {
+                co_yield new_grid_pos;
+            }
+        }
+    }
+}
+
+coro::generator<Move> AllPawnMoveList(const Position& pos) {
+    uint64_t used = 0;
+
     for (auto grid_pos : PawnMoveList(pos)) {
-        co_yield Move{.kind = MoveKind::kMovePawn, .pos = grid_pos};
+        used |= 1LL << grid_pos.compress();
+        co_yield Move{.kind = MoveKind::kMovePawn,
+                      .pos = grid_pos,
+                      .use_move_two_tiles = false};
+    }
+
+    if (!pos.GetSpecialState(pos.GetCurrentTurn()).move_two_tiles_available) {
+        co_return;
+    }
+
+    for (auto grid_pos : DoublePawnMoveList(pos)) {
+        if (!(used & (1LL << grid_pos.compress()))) {
+            co_yield Move{.kind = MoveKind::kMovePawn,
+                          .pos = grid_pos,
+                          .use_move_two_tiles = true};
+        }
+    }
+}
+
+coro::generator<Move> AllMoveList(const Position& pos) {
+    for (auto move : AllPawnMoveList(pos)) {
+        co_yield move;
     }
 
     for (auto [grid_pos, side, length] : kAllWallMoves) {

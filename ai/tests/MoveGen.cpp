@@ -8,8 +8,8 @@
 class MoveGenTest : public testing::Test {
    protected:
     void Move(GridPosition player, GridPosition other) {
-        pos.MovePawn(player);
-        pos.MovePawn(other);
+        pos.MovePawn(player, false);
+        pos.MovePawn(other, false);
     }
     Position pos;
 };

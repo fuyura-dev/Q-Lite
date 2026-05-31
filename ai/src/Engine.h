@@ -21,6 +21,7 @@ class Engine {
 
     void SetPlayerClass(int player, Class c);
     std::vector<Class> StartMatch();
+    void RestartMatch();
     void Reset();
 
     // move for the current player, if the mode is valid the turn changes.
@@ -32,5 +33,5 @@ class Engine {
 
    private:
     Position pos;
-    std::vector<Class> classes = {Class::kGhost, Class::kGhost};  // TEMPORARY
+    std::vector<Class> classes = {Class::kRandom, Class::kRandom};
 };
