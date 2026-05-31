@@ -36,7 +36,7 @@ import {
   getReserveWallLengthFromKey,
 } from "./renderer3d/reserveWalls";
 
-const DEV_PAWN_VIEWER = true;
+const DEV_PAWN_VIEWER = false;
 const DEV_PAWN_VIEWER_CLASS = "builder";
 
 export function createRenderer3D(container, options = {}) {
@@ -571,6 +571,7 @@ export function createRenderer3D(container, options = {}) {
       const mesh = createPawnMesh(player.id, player.classId);
       const position = getPawnPosition(player);
       mesh.position.set(position.x, position.y, position.z);
+      mesh.rotation.y = player.id == 1 ? Math.PI : 0;
       pawnGroup.add(mesh);
     }
 
