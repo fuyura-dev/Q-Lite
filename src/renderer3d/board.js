@@ -60,9 +60,11 @@ export function createBoardGroup() {
   const boardGroup = new THREE.Group();
   const cellMeshes = [];
   const { horizontalSlotMeshes, verticalSlotMeshes } = createWallSlotTargets();
+  const frameSize = BOARD_DEPTH + 1.4;
+  const topPanelSize = BOARD_DEPTH + 0.84;
 
   const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(BOARD_WORLD_SIZE + 1, 0.7, BOARD_DEPTH + 1.4),
+    new THREE.BoxGeometry(frameSize, 0.7, frameSize),
     BOARD_MATERIALS.frame,
   );
   frame.receiveShadow = true;
@@ -70,7 +72,7 @@ export function createBoardGroup() {
   boardGroup.add(frame);
 
   const topPanel = new THREE.Mesh(
-    new THREE.BoxGeometry(BOARD_WORLD_SIZE + 0.42, 0.16, BOARD_DEPTH + 0.84),
+    new THREE.BoxGeometry(topPanelSize, 0.16, topPanelSize),
     BOARD_MATERIALS.top,
   );
   topPanel.receiveShadow = true;
@@ -115,6 +117,21 @@ export function createBoardGroup() {
   }
   for (const slotMesh of verticalSlotMeshes) {
     boardGroup.add(slotMesh);
+  }
+
+  for (const side of [-1, 1]) {
+    const sideStripWidth = CELL_SIZE;
+    const sideStripLength = BOARD_DEPTH + LANE_SIZE * 2;
+    const stripX = side * (HALF_BOARD + LANE_SIZE + sideStripWidth / 2);
+
+    const sideStrip = new THREE.Mesh(
+      new THREE.BoxGeometry(sideStripWidth, CELL_HEIGHT, sideStripLength),
+      BOARD_MATERIALS.cell,
+    );
+    sideStrip.castShadow = true;
+    sideStrip.receiveShadow = true;
+    sideStrip.position.set(stripX, CELL_HEIGHT, 0);
+    boardGroup.add(sideStrip);
   }
 
   // LANE
