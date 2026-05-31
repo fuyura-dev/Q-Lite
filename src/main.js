@@ -56,6 +56,11 @@ worker.onmessageerror = (event) => {
 
 const USE_MOCK = false;
 
+const selectedPlayerClasses = {
+  1: "runner",
+  2: "builder",
+};
+
 const MOCK_SNAPSHOT = {
   boardSize: 7,
   currentTurn: 1,
@@ -384,12 +389,14 @@ async function createEngineSnapshot() {
         row: await engine.getPlayerRow(1),
         col: await engine.getPlayerCol(1),
         wallsRemaining: await engine.getRemainingWalls(1),
+        classId: selectedPlayerClasses[1],
       },
       {
         id: 2,
         row: await engine.getPlayerRow(2),
         col: await engine.getPlayerCol(2),
         wallsRemaining: await engine.getRemainingWalls(2),
+        classId: selectedPlayerClasses[2],
       },
     ],
     horizontalWalls: (await engine.getWalls()).filter(

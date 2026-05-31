@@ -12,7 +12,6 @@ import {
   clearGroup,
   createPlacedWallMesh,
   createReserveWallMesh,
-  createPawnMesh,
   createHoverCellMesh,
   createSelectedCellMesh,
   createHoverWallMesh,
@@ -20,6 +19,7 @@ import {
   updateWallPreviewMesh,
   createMoveTargetMesh,
 } from "./renderer3d/meshes";
+import { createPawnMesh } from "./renderer3d/pawns";
 import {
   BOARD_MATERIALS,
   BOARD_SIZE,
@@ -35,6 +35,9 @@ import {
   createReserveWallStore,
   getReserveWallLengthFromKey,
 } from "./renderer3d/reserveWalls";
+
+const DEV_PAWN_VIEWER = true;
+const DEV_PAWN_VIEWER_CLASS = "builder";
 
 export function createRenderer3D(container, options = {}) {
   if (!container) {
@@ -63,13 +66,17 @@ export function createRenderer3D(container, options = {}) {
 
   const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
     createBoardGroup();
-  worldGroup.add(boardGroup);
+  if (!DEV_PAWN_VIEWER) {
+    worldGroup.add(boardGroup);
+  }
   const placedWallGroup = new THREE.Group();
   worldGroup.add(placedWallGroup);
   const reserveWallGroup = new THREE.Group();
   worldGroup.add(reserveWallGroup);
   const pawnGroup = new THREE.Group();
   worldGroup.add(pawnGroup);
+  const devViewerGroup = new THREE.Group();
+  worldGroup.add(devViewerGroup);
   const moveTargetGroup = new THREE.Group();
   worldGroup.add(moveTargetGroup);
   const hoverCell = createHoverCellMesh();
@@ -80,6 +87,42 @@ export function createRenderer3D(container, options = {}) {
   worldGroup.add(hoverWall);
   const selectedWall = createSelectedWallMesh();
   worldGroup.add(selectedWall);
+
+  function setupDevPawnViewer() {
+    clearGroup(devViewerGroup);
+    clearGroup(placedWallGroup);
+    clearGroup(reserveWallGroup);
+    clearGroup(pawnGroup);
+    clearGroup(moveTargetGroup);
+
+    const platform = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.8, 0.9, 0.08, 36),
+      new THREE.MeshStandardMaterial({
+        color: "#24140a",
+        roughness: 0.78,
+        metalness: 0.08,
+      }),
+    );
+    platform.receiveShadow = true;
+    platform.position.y = -0.04;
+    devViewerGroup.add(platform);
+
+    const pawn = createPawnMesh(1, DEV_PAWN_VIEWER_CLASS);
+    pawn.scale.setScalar(1.9);
+    pawn.position.y = -CELL_HEIGHT;
+    devViewerGroup.add(pawn);
+
+    camera.position.set(0.2, 2.2, 3.4);
+    controls.target.set(0, 0.55, 0);
+    controls.enablePan = true;
+    controls.minDistance = 1.4;
+    controls.maxDistance = 7;
+    controls.update();
+  }
+
+  if (DEV_PAWN_VIEWER) {
+    setupDevPawnViewer();
+  }
 
   function rerenderSnapshot() {
     if (latestSnapshot) {
@@ -502,6 +545,13 @@ export function createRenderer3D(container, options = {}) {
   function render(snapshot, options = {}) {
     latestRenderOptions = options;
 
+    if (DEV_PAWN_VIEWER) {
+      latestSnapshot = snapshot;
+      setHoveredCell(null);
+      setHoveredWallSlot(null);
+      return;
+    }
+
     if (!snapshot) {
       latestSnapshot = null;
       setHoveredCell(null);
@@ -518,7 +568,7 @@ export function createRenderer3D(container, options = {}) {
     clearGroup(moveTargetGroup);
 
     for (const player of snapshot.players) {
-      const mesh = createPawnMesh(player.id);
+      const mesh = createPawnMesh(player.id, player.classId);
       const position = getPawnPosition(player);
       mesh.position.set(position.x, position.y, position.z);
       pawnGroup.add(mesh);

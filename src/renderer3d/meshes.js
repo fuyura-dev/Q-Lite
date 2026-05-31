@@ -67,39 +67,6 @@ export function createReserveWallMesh(reserveWallKey, isSelected = false) {
   return mesh;
 }
 
-export function createPawnMesh(playerId) {
-  const pawnGroup = new THREE.Group();
-  const mat = playerId == 1 ? BOARD_MATERIALS.pawnOne : BOARD_MATERIALS.pawnTwo;
-
-  // Base
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.26, 0.1, 20),
-    mat,
-  );
-  base.castShadow = true;
-  base.receiveShadow = true;
-  base.position.y = CELL_HEIGHT + 0.05;
-  pawnGroup.add(base);
-
-  // Body
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.21, 0.42, 20),
-    mat,
-  );
-  body.castShadow = true;
-  body.receiveShadow = true;
-  body.position.y = CELL_HEIGHT + 0.36;
-  pawnGroup.add(body);
-
-  // Round head
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat);
-  head.castShadow = true;
-  head.position.y = CELL_HEIGHT + 0.68;
-  pawnGroup.add(head);
-
-  return pawnGroup;
-}
-
 export function createHoverCellMesh() {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(CELL_SIZE * 0.92, 0.05, CELL_SIZE * 0.92),
