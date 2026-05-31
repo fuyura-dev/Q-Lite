@@ -181,7 +181,7 @@
           </div>
 
           <div class="game-hud__controls">
-            <label for="" class="field">
+            <label for="" class="field field--hidden">
               <span>Mode</span>
               <select name="" id="mode-select">
                 <option value="human-vs-human">Human vs Human</option>
@@ -189,8 +189,12 @@
                 <option value="ai-vs-ai">AI vs AI</option>
               </select>
             </label>
-            <button id="ai-toggle-button" type="button">Start AI</button>
-            <button id="ai-step-button" type="button">Next Move</button>
+            <div class="mode-display">
+              <span class="mode-display__label">Mode</span>
+              <strong id="mode-display-text">Human vs Human</strong>
+            </div>
+            <button id="ai-toggle-button" type="button" hidden>Start AI</button>
+            <button id="ai-step-button" type="button" hidden>Next Move</button>
             <button id="restart-button" type="button">Restart</button>
             <button id="main-menu-button" type="button">Main Menu</button>
           </div>
@@ -215,10 +219,21 @@
               <p class="info-card__label">Player 2 Walls</p>
               <p class="info-card__value" id="info-player-two-walls">8</p>
             </div>
+            <div class="info-card">
+              <p class="info-card__label">Player 1 Class</p>
+              <p class="info-card__value" id="info-player-one-class">Ghost</p>
+            </div>
+            <div class="info-card">
+              <p class="info-card__label">Player 2 Class</p>
+              <p class="info-card__value" id="info-player-two-class">Runner</p>
+            </div>
+            <label for="" class="debug-toggle">
+              <input type="checkbox" id="debug-toggle" />
+              <span>Show Debug</span>
+            </label>
           </div>
 
-          <!-- Temporary development info area. Not part of the final UI -->
-          <div class="dev-info">
+          <div class="dev-info" id="dev-info" hidden>
             <p id="dev-info-text">blank</p>
           </div>
         </aside>

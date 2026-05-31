@@ -24,15 +24,19 @@ const classPreviewDescription = document.getElementById(
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
 const modeSelect = document.getElementById("mode-select");
+const modeDisplayText = document.getElementById("mode-display-text");
 const aiToggleButton = document.getElementById("ai-toggle-button");
 const aiStepButton = document.getElementById("ai-step-button");
 
 const infoCurrentTurn = document.getElementById("info-current-turn");
 const infoPlayerOneWalls = document.getElementById("info-player-one-walls");
 const infoPlayerTwoWalls = document.getElementById("info-player-two-walls");
+const infoPlayerOneClass = document.getElementById("info-player-one-class");
+const infoPlayerTwoClass = document.getElementById("info-player-two-class");
 
-// TEMP
+const devInfo = document.getElementById("dev-info");
 const devInfoText = document.getElementById("dev-info-text");
+const debugToggle = document.getElementById("debug-toggle");
 
 const boardViewport = document.getElementById("board-viewport");
 const classPreview = classPreviewViewport
@@ -145,6 +149,14 @@ function getClassGroupLabel(playerId) {
   }
 
   return `Player ${playerId} Class`;
+}
+
+function getClassLabel(classId) {
+  if (!classId) {
+    return "-";
+  }
+
+  return classId.charAt(0).toUpperCase() + classId.slice(1);
 }
 
 function syncClassChoiceButtons() {
@@ -494,7 +506,6 @@ function getSnapshot() {
 }
 
 function updateStatus(snapshot) {
-  const modeLabel = getModeLabel();
   const playerOne = snapshot?.players?.[0];
   const playerTwo = snapshot?.players?.[1];
   const winner = getWinner(snapshot);
@@ -502,18 +513,17 @@ function updateStatus(snapshot) {
   let statusTextMessage;
 
   if (!snapshot) {
-    statusTextMessage = engineStatus;
+    statusTextMessage =
+      engineStatus == "Engine Ready" ? "Preparing game..." : engineStatus;
   } else {
-    const setup = `Current Setup: ${modeLabel}`;
-
     if (winner) {
-      statusTextMessage = `Player ${winner} wins. ${setup}`;
+      statusTextMessage = `Player ${winner} wins.`;
     } else if (aiTurnInProgress) {
-      statusTextMessage = `AI is thinking. ${setup}`;
+      statusTextMessage = `AI is thinking...`;
     } else if (isAiControlledTurn(snapshot) && !aiAutoplayEnabled) {
-      statusTextMessage = `AI paused. ${setup}`;
+      statusTextMessage = `AI paused. Player ${snapshot.currentTurn} is waiting`;
     } else {
-      statusTextMessage = `Renderer ready. ${setup}`;
+      statusTextMessage = `Player ${snapshot.currentTurn}'s turn`;
     }
   }
 
@@ -529,6 +539,12 @@ function updateStatus(snapshot) {
   infoPlayerTwoWalls.textContent = playerTwo
     ? `${playerTwo.wallsRemaining}`
     : "-";
+  if (infoPlayerOneClass) {
+    infoPlayerOneClass.textContent = getClassLabel(playerOne?.classId);
+  }
+  if (infoPlayerTwoClass) {
+    infoPlayerTwoClass.textContent = getClassLabel(playerTwo?.classId);
+  }
   evaluation = snapshot ? snapshot.evaluation : 0;
   updateDevInfo();
 }
@@ -538,12 +554,18 @@ function updateControlState(snapshot) {
   const gameOver = isGameOver(snapshot);
   const aiTurn = isAiControlledTurn(snapshot);
 
+  if (modeDisplayText) {
+    modeDisplayText.textContent = getModeLabel();
+  }
+
   if (aiToggleButton) {
+    aiToggleButton.hidden = !aiModeEnabled;
     aiToggleButton.textContent = aiAutoplayEnabled ? "Pause AI" : "Start AI";
     aiToggleButton.disabled = !aiModeEnabled || !snapshot || gameOver;
   }
 
   if (aiStepButton) {
+    aiStepButton.hidden = !aiModeEnabled;
     aiStepButton.disabled =
       !aiModeEnabled || !snapshot || gameOver || aiTurnInProgress || !aiTurn;
   }
@@ -721,6 +743,12 @@ startGameButton?.addEventListener("click", () => {
 
 mainMenuButton?.addEventListener("click", () => {
   showMainMenu();
+});
+
+debugToggle?.addEventListener("change", () => {
+  if (devInfo) {
+    devInfo.hidden = !debugToggle.checked;
+  }
 });
 
 aiToggleButton?.addEventListener("click", async () => {
