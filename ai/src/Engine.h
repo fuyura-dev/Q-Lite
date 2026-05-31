@@ -32,5 +32,6 @@ class Engine {
 
    private:
     Position pos;
-    std::vector<Class> classes = {Class::kGhost, Class::kGhost};  // TEMPORARY
+    std::vector<Class> classes = {Class::kBuilder,
+                                  Class::kBuilder};  // TEMPORARY
 };

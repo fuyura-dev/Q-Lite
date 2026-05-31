@@ -95,10 +95,13 @@ coro::generator<Move> AllMoveList(const Position& pos) {
 
     for (auto [grid_pos, side, length] : kAllWallMoves) {
         if (pos.CanPlaceWall(grid_pos, side, length)) {
-            co_yield Move{.kind = MoveKind::kPlaceWall,
-                          .pos = grid_pos,
-                          .side = side,
-                          .length = length};
+            co_yield Move{
+                .kind = MoveKind::kPlaceWall,
+                .pos = grid_pos,
+                .side = side,
+                .length = length,
+                .use_extra_wall =
+                    pos.GetSpecialState(pos.GetCurrentTurn()).extra_walls > 0};
         }
     }
 }

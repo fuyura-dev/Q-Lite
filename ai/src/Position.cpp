@@ -34,7 +34,11 @@ void Position::UndoMove(const Move& move) {
     if (move.kind == MoveKind::kMovePawn) {
         pawn_positions[current_turn] = move.pos;
     } else {
-        remaining_walls[current_turn][move.length]++;
+        if (move.use_extra_wall) {
+            GetSpecialState(GetCurrentTurn()).extra_walls++;
+        } else {
+            remaining_walls[current_turn][move.length]++;
+        }
         walls[move.side][move.length] &= ~(1LL << move.pos.compress());
         combined_walls[GetCurrentTurn()][move.side] &=
             ~(kPlacedWallMask[move.side][move.length] << move.pos.compress());
@@ -55,7 +59,12 @@ void Position::PlaceWall(GridPosition pos, WallSide side, WallLength length) {
     walls[side][length] |= 1LL << pos.compress();
     combined_walls[GetCurrentTurn()][side] |= kPlacedWallMask[side][length]
                                               << pos.compress();
-    remaining_walls[current_turn][length]--;
+    SpecialState& state = GetSpecialState(GetCurrentTurn());
+    if (state.extra_walls) {
+        state.extra_walls--;
+    } else {
+        remaining_walls[current_turn][length]--;
+    }
     ChangeTurn();
 }
 
@@ -76,7 +85,9 @@ bool Position::HasWall(GridPosition pos, WallSide side,
 
 bool Position::CanPlaceWall(GridPosition pos, WallSide side,
                             WallLength length) const {
-    if (remaining_walls[current_turn][length] == 0) {
+    if (GetSpecialState(GetCurrentTurn()).extra_walls +
+            remaining_walls[current_turn][length] ==
+        0) {
         return false;
     }
     if (side == kRightSide &&

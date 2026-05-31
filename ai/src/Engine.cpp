@@ -81,7 +81,7 @@ std::vector<Class> Engine::StartMatch() {
 
 void Engine::Reset() {
     pos = Position();
-    classes = {Class::kGhost, Class::kGhost};  // temporary
+    classes = {Class::kBuilder, Class::kBuilder};  // temporary
 }
 
 MoveResult Engine::PlaceWall(int8_t row, int8_t col, WallSide side,

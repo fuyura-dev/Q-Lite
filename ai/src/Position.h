@@ -11,6 +11,7 @@ struct Move {
     GridPosition pos;
     WallSide side;
     WallLength length;
+    bool use_extra_wall;
 };
 
 using Score = int;
