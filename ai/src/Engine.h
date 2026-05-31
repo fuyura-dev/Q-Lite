@@ -6,8 +6,11 @@
 
 enum MoveResult : uint8_t { kInvalid, kValid, kWin };
 
+enum class Class { kRandom, kGhost, kBuilder, kRunner, kNone };
+
 class Engine {
    public:
+    Engine();
     int GetCurrentTurn() const;
     int GetPlayerRow(int player) const;
     int GetPlayerCol(int player) const;
@@ -16,6 +19,8 @@ class Engine {
     std::vector<GridPosition> GetLegalPawnMoves() const;
     int Evaluate() const;
 
+    void SetPlayerClass(int player, Class c);
+    std::vector<Class> StartMatch();
     void Reset();
 
     // move for the current player, if the mode is valid the turn changes.
@@ -27,4 +32,5 @@ class Engine {
 
    private:
     Position pos;
+    std::vector<Class> classes = {Class::kGhost, Class::kGhost};  // TEMPORARY
 };

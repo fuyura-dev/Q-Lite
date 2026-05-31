@@ -329,8 +329,9 @@ async function maybeRunAiTurn(options = {}) {
         ? "Action: AI executing next move"
         : "Action: AI thinking";
       await refresh();
+      const start = performance.now();
       await engine.doBestMove();
-      actionStatusLabel = "Action: AI completed its move";
+      actionStatusLabel = `Action: AI completed its move (${Math.round(performance.now() - start)} ms)`;
       renderer.clearMoveSelection();
       renderer.clearWallPlacementSelection();
       await refresh();
@@ -711,7 +712,7 @@ async function initializeEngine() {
     });
     console.log(wasmModule);
     engine = createEngineProxy(wasmModule);
-
+    await engine.startMatch(); // TODO : temporary
     buildTime = wasmModule.BUILD_TIME;
     engineStatus = "Engine Ready";
   } catch (error) {

@@ -15,6 +15,13 @@ struct Move {
 
 using Score = int;
 
+struct SpecialState {
+    bool can_pass_walls = false;
+    uint8_t extra_walls = 0;
+    bool can_move_two_tiles = false;
+    bool move_two_tiles_available = false;
+};
+
 class Position {
    public:
     bool DoMove(const Move& move);
@@ -27,12 +34,16 @@ class Position {
     GridPosition GetPawnPosition(Color player) const;
     uint8_t GetRemainingWalls(Color player, WallLength length) const;
 
-    bool HasWall(GridPosition pos, WallSide side) const;
+    bool HasWallBoth(GridPosition pos, WallSide side) const;
+    bool HasWallBuiltByEnemy(GridPosition pos, WallSide side) const;
     bool HasWall(GridPosition pos, WallSide side, WallLength length) const;
     bool CanPlaceWall(GridPosition pos, WallSide side, WallLength length) const;
 
     Score Evaluate() const;
     bool IsFinished() const;
+
+    SpecialState& GetSpecialState(Color player);
+    const SpecialState& GetSpecialState(Color player) const;
 
    private:
     bool HasIntersectingWall(GridPosition pos, WallSide side,
@@ -46,7 +57,8 @@ class Position {
     GridPosition pawn_positions[2] = {kStartPositions[kWhite],
                                       kStartPositions[kBlack]};
     uint64_t walls[2][3] = {0};
-    uint64_t combined_walls[2] = {0};
+    uint64_t combined_walls[2][2] = {0};
+    SpecialState special_states[2];
 };
 
 // each bit in the walls array represents whether a wall exists for a cell.
