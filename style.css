@@ -279,6 +279,77 @@ select {
   display: none;
 }
 
+.winner-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  padding: 34px 24px 30px;
+  pointer-events: auto;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 3, 2, 0.42),
+    rgba(5, 3, 2, 0.04) 34%,
+    rgba(5, 3, 2, 0.1) 68%,
+    rgba(5, 3, 2, 0.48)
+  );
+}
+
+.winner-overlay[hidden] {
+  display: none;
+}
+
+.winner-message {
+  width: min(100%, 520px);
+  text-align: center;
+  pointer-events: none;
+}
+
+.winner-dialog__eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.winner-dialog__title {
+  margin: 0;
+  color: #f0d090;
+  font-size: 3.2rem;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(180, 100, 0, 0.6);
+}
+
+.winner-dialog__description {
+  margin: 12px 0 0;
+  color: rgba(240, 226, 196, 0.78);
+  line-height: 1.45;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
+}
+
+.winner-dialog__actions {
+  align-self: end;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 4px;
+  background: rgba(25, 13, 5, 0.48);
+  border: 1px solid rgba(240, 208, 144, 0.22);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+}
+
+.winner-dialog__actions button {
+  flex: 0 0 auto;
+  min-height: 38px;
+}
+
 .game-hud {
   display: flex;
   justify-content: space-between;

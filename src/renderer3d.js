@@ -47,6 +47,9 @@ export function createRenderer3D(container, options = {}) {
 
   const FULL_TURN = Math.PI * 2;
   const MENU_ROTATION_SPEED = 0.18;
+  const WINNER_CAMERA_ORBIT_SPEED = 0.22;
+  const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 8, 10);
+  const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
 
   const { scene, camera, renderer, controls } = createSceneBundle(container);
 
@@ -59,7 +62,12 @@ export function createRenderer3D(container, options = {}) {
   let selectedCellKey = "";
   let selectedWallSlotKey = "";
   let selectedReserveWallKey = "";
+  let winnerCameraActive = false;
+  let winnerOrbitAngle = 0;
   const reserveWallStore = createReserveWallStore();
+  const winnerFocusPosition = new THREE.Vector3();
+  const winnerCameraPosition = new THREE.Vector3();
+  const winnerViewDirection = new THREE.Vector3();
 
   const worldGroup = new THREE.Group();
   scene.add(worldGroup);
@@ -147,6 +155,90 @@ export function createRenderer3D(container, options = {}) {
       (currentRotation - targetRotation) / FULL_TURN,
     );
     return targetRotation + fullTurns * FULL_TURN;
+  }
+
+  function getSnapshotWinner(snapshot) {
+    if (!snapshot) {
+      return null;
+    }
+
+    const playerOne = snapshot.players?.find((player) => player.id == 1);
+    const playerTwo = snapshot.players?.find((player) => player.id == 2);
+
+    if (playerOne?.row == 0) {
+      return 1;
+    }
+
+    if (playerTwo?.row == snapshot.boardSize - 1) {
+      return 2;
+    }
+
+    return null;
+  }
+
+  function updateWinnerCameraFocus(delta = 0) {
+    const winner = getSnapshotWinner(latestSnapshot);
+
+    if (winner && !latestRenderOptions.menuActive) {
+      const winningPlayer = latestSnapshot.players?.find(
+        (player) => player.id == winner,
+      );
+
+      if (!winningPlayer) {
+        return;
+      }
+
+      const position = getPawnPosition(winningPlayer);
+      winnerFocusPosition.set(position.x, CELL_HEIGHT + 0.58, position.z);
+      worldGroup.localToWorld(winnerFocusPosition);
+
+      if (!winnerCameraActive) {
+        winnerViewDirection.subVectors(camera.position, controls.target);
+        winnerViewDirection.y = 0;
+
+        if (winnerViewDirection.lengthSq() < 0.001) {
+          winnerViewDirection.set(0, 0, 1);
+        }
+
+        winnerViewDirection.normalize();
+        winnerOrbitAngle = Math.atan2(
+          winnerViewDirection.x,
+          winnerViewDirection.z,
+        );
+      }
+
+      winnerOrbitAngle += delta * WINNER_CAMERA_ORBIT_SPEED;
+      winnerViewDirection.set(
+        Math.sin(winnerOrbitAngle),
+        0,
+        Math.cos(winnerOrbitAngle),
+      );
+      winnerCameraPosition
+        .copy(winnerFocusPosition)
+        .addScaledVector(winnerViewDirection, 2.75);
+      winnerCameraPosition.y += 1.45;
+
+      camera.position.lerp(winnerCameraPosition, 0.045);
+      controls.target.lerp(winnerFocusPosition, 0.07);
+      winnerCameraActive = true;
+      return;
+    }
+
+    if (!winnerCameraActive) {
+      return;
+    }
+
+    camera.position.lerp(DEFAULT_CAMERA_POSITION, 0.045);
+    controls.target.lerp(DEFAULT_CAMERA_TARGET, 0.06);
+
+    if (
+      camera.position.distanceTo(DEFAULT_CAMERA_POSITION) < 0.05 &&
+      controls.target.distanceTo(DEFAULT_CAMERA_TARGET) < 0.05
+    ) {
+      camera.position.copy(DEFAULT_CAMERA_POSITION);
+      controls.target.copy(DEFAULT_CAMERA_TARGET);
+      winnerCameraActive = false;
+    }
   }
 
   function resizeRenderer() {
@@ -520,11 +612,12 @@ export function createRenderer3D(container, options = {}) {
   function animate() {
     animationFrameId = window.requestAnimationFrame(animate);
     const delta = clock.getDelta();
-    controls.update(delta);
 
     if (latestRenderOptions.menuActive) {
       worldGroup.rotation.y =
         (worldGroup.rotation.y + delta * MENU_ROTATION_SPEED) % FULL_TURN;
+      updateWinnerCameraFocus(delta);
+      controls.update(delta);
       renderer.render(scene, camera);
       return;
     }
@@ -538,6 +631,8 @@ export function createRenderer3D(container, options = {}) {
     );
     worldGroup.rotation.y +=
       (nearestTargetRotation - worldGroup.rotation.y) * 0.05;
+    updateWinnerCameraFocus(delta);
+    controls.update(delta);
     renderer.render(scene, camera);
   }
   animate();

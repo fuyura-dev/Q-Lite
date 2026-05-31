@@ -20,6 +20,11 @@ const classPreviewTitle = document.getElementById("class-preview-title");
 const classPreviewDescription = document.getElementById(
   "class-preview-description",
 );
+const winnerOverlay = document.getElementById("winner-overlay");
+const winnerTitle = document.getElementById("winner-title");
+const winnerDescription = document.getElementById("winner-description");
+const winnerRestartButton = document.getElementById("winner-restart-button");
+const winnerMainMenuButton = document.getElementById("winner-main-menu-button");
 
 const statusText = document.getElementById("status-text");
 const restartButton = document.getElementById("restart-button");
@@ -204,6 +209,30 @@ function showClassPreview(button) {
 function hideClassPreview() {
   classPreviewPanel?.classList.remove("is-visible");
   classPreview?.hide();
+}
+
+function updateWinnerOverlay(snapshot) {
+  const winner = getWinner(snapshot);
+  const shouldShow = gameStarted && winner;
+
+  if (winnerOverlay) {
+    winnerOverlay.hidden = !shouldShow;
+  }
+
+  if (!shouldShow) {
+    return;
+  }
+
+  const winningPlayer = snapshot.players?.find((player) => player.id == winner);
+  const classLabel = getClassLabel(winningPlayer?.classId);
+
+  if (winnerTitle) {
+    winnerTitle.textContent = `Player ${winner} Wins`;
+  }
+
+  if (winnerDescription) {
+    winnerDescription.textContent = `${classLabel} claims the path.`;
+  }
 }
 
 function getWinner(snapshot) {
@@ -586,6 +615,7 @@ async function refresh() {
   });
   updateStatus(snapshot);
   updateControlState(snapshot);
+  updateWinnerOverlay(snapshot);
 }
 
 function syncMenuModeButtons() {
@@ -772,6 +802,15 @@ aiStepButton?.addEventListener("click", async () => {
 restartButton?.addEventListener("click", async () => {
   await resetCurrentGame("Action: game restarted");
   await maybeRunAiTurn();
+});
+
+winnerRestartButton?.addEventListener("click", async () => {
+  await resetCurrentGame("Action: game restarted");
+  await maybeRunAiTurn();
+});
+
+winnerMainMenuButton?.addEventListener("click", () => {
+  showMainMenu();
 });
 
 syncMenuModeButtons();
