@@ -10,6 +10,7 @@ import {
 import { createSceneBundle } from "./renderer3d/scene";
 import { createFloatingIsland } from "./renderer3d/island";
 import { createBoardEnvironment } from "./renderer3d/environment";
+import { createPlayerLabel } from "./renderer3d/labels";
 import {
   clearGroup,
   createPlacedWallMesh,
@@ -700,6 +701,10 @@ export function createRenderer3D(container, options = {}) {
       mesh.position.set(position.x, position.y, position.z);
       mesh.rotation.y = player.id == 1 ? Math.PI : 0;
       pawnGroup.add(mesh);
+
+      const label = createPlayerLabel(player.id);
+      label.position.set(position.x, position.y + 1.35, position.z);
+      pawnGroup.add(label);
     }
 
     // Placed Walls

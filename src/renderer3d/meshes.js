@@ -301,6 +301,14 @@ function createWallOwnerMarker(axis, width, depth, ownerId) {
 }
 
 export function clearGroup(group) {
+  group.traverse((object) => {
+    if (!object.isSprite || !object.material) {
+      return;
+    }
+
+    object.material.map?.dispose();
+    object.material.dispose();
+  });
   group.clear();
 }
 
