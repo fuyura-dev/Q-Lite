@@ -64,6 +64,7 @@ let aiAutoplayEnabled = true;
 let aiLoopToken = 0;
 let latestSnapshot = null;
 let gameStarted = false;
+const wallOwners = new Map();
 
 let buildTime = "";
 let pawnClasses = {};
@@ -133,6 +134,50 @@ function getWallSide(axis) {
   return axis === "horizontal"
     ? engine.wallSide.BOTTOM_SIDE
     : engine.wallSide.RIGHT_SIDE;
+}
+
+function getWallOwnerKey(axis, wall) {
+  return `${axis}:${wall.pos.row}:${wall.pos.col}:${wall.length ?? 2}`;
+}
+
+function rememberWallOwner(axis, wall, playerId) {
+  wallOwners.set(getWallOwnerKey(axis, wall), playerId);
+}
+
+function withWallOwners(axis, walls) {
+  return walls.map((wall) => ({
+    ...wall,
+    ownerId: wallOwners.get(getWallOwnerKey(axis, wall)) ?? null,
+  }));
+}
+
+function getSnapshotWallKeySet(snapshot) {
+  const keys = new Set();
+
+  for (const wall of snapshot?.horizontalWalls ?? []) {
+    keys.add(getWallOwnerKey("horizontal", wall));
+  }
+  for (const wall of snapshot?.verticalWalls ?? []) {
+    keys.add(getWallOwnerKey("vertical", wall));
+  }
+
+  return keys;
+}
+
+function rememberNewWallOwners(beforeKeys, afterSnapshot, playerId) {
+  for (const wall of afterSnapshot?.horizontalWalls ?? []) {
+    const key = getWallOwnerKey("horizontal", wall);
+    if (!beforeKeys.has(key)) {
+      wallOwners.set(key, playerId);
+    }
+  }
+
+  for (const wall of afterSnapshot?.verticalWalls ?? []) {
+    const key = getWallOwnerKey("vertical", wall);
+    if (!beforeKeys.has(key)) {
+      wallOwners.set(key, playerId);
+    }
+  }
 }
 
 function isHumanVsAiMode() {
@@ -344,8 +389,14 @@ async function maybeRunAiTurn(options = {}) {
         ? "Action: AI executing next move"
         : "Action: AI thinking";
       await refresh();
+      const beforeWallKeys = getSnapshotWallKeySet(currentSnapshot);
       const start = performance.now();
       await engine.doBestMove();
+      rememberNewWallOwners(
+        beforeWallKeys,
+        await getSnapshot(),
+        currentSnapshot.currentTurn,
+      );
       actionStatusLabel = `Action: AI completed its move (${Math.round(performance.now() - start)} ms)`;
       renderer.clearMoveSelection();
       renderer.clearWallPlacementSelection();
@@ -368,12 +419,14 @@ async function tryPlaceSelectedWall(wallSlot) {
     return;
   }
 
-  if (isGameOver(await getSnapshot())) {
+  const snapshot = await getSnapshot();
+
+  if (isGameOver(snapshot)) {
     blockInteraction("Action: game over, press restart");
     return;
   }
 
-  if (isAiControlledTurn(await getSnapshot())) {
+  if (isAiControlledTurn(snapshot)) {
     blockInteraction("Action: wait for AI turn to finish");
     return;
   }
@@ -403,6 +456,14 @@ async function tryPlaceSelectedWall(wallSlot) {
     return;
   }
 
+  rememberWallOwner(
+    wallSlot.axis,
+    {
+      pos: { row: wallSlot.row, col: wallSlot.col },
+      length: selectedReserveWall.length,
+    },
+    snapshot.currentTurn,
+  );
   actionStatusLabel = `Action: placed ${wallSlot.axis} wall at (${wallSlot.row}, ${wallSlot.col})`;
   renderer.commitSelectedReserveWall();
   selectedReserveWall = null;
@@ -513,6 +574,8 @@ const renderer = createRenderer3D(boardViewport, {
 async function createEngineSnapshot() {
   if (USE_MOCK) return MOCK_SNAPSHOT;
 
+  const walls = await engine.getWalls();
+
   return {
     boardSize: 7,
     currentTurn: await engine.getCurrentTurn(),
@@ -535,11 +598,13 @@ async function createEngineSnapshot() {
         classId: selectedPlayerClasses[2],
       },
     ],
-    horizontalWalls: (await engine.getWalls()).filter(
-      (w) => w.side == engine.wallSide.BOTTOM_SIDE,
+    horizontalWalls: withWallOwners(
+      "horizontal",
+      walls.filter((w) => w.side == engine.wallSide.BOTTOM_SIDE),
     ),
-    verticalWalls: (await engine.getWalls()).filter(
-      (w) => w.side == engine.wallSide.RIGHT_SIDE,
+    verticalWalls: withWallOwners(
+      "vertical",
+      walls.filter((w) => w.side == engine.wallSide.RIGHT_SIDE),
     ),
     legalPawnMoves: await engine.getLegalPawnMoves(),
     evaluation: await engine.evaluate(),
@@ -656,6 +721,7 @@ async function resetCurrentGame(actionLabel, isRestart = false) {
   if (engine && isRestart) {
     await engine.restartMatch();
   }
+  wallOwners.clear();
   actionStatusLabel = actionLabel;
   clearSelections();
   await refresh();

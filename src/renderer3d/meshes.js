@@ -21,9 +21,36 @@ const WALL_TEXTURE_WORLD_SCALE = 1.72;
 const WALL_EDGE_ROUGHNESS = 0.048;
 const WALL_CHIP_DEPTH = 0.07;
 const WALL_SIDE_ROUGHNESS = 0.034;
+const WALL_OWNER_CREST_WIDTH = 0.18;
+const WALL_OWNER_CREST_HEIGHT = 0.4;
+const WALL_OWNER_CREST_THICKNESS = 0.09;
+const WALL_OWNER_EMBLEM_SCALE = 0.58;
+const WALL_OWNER_EMBLEM_THICKNESS = 0.002;
 
 const wallTextureLoader = new THREE.TextureLoader();
 const wallMaterials = new Map();
+
+const WALL_OWNER_PLAQUE_MATERIAL = new THREE.MeshStandardMaterial({
+  color: "#6b4327",
+  roughness: 0.78,
+  metalness: 0.02,
+  side: THREE.DoubleSide,
+});
+
+const WALL_OWNER_EMBLEM_MATERIALS = {
+  1: new THREE.MeshStandardMaterial({
+    color: "#b98535",
+    roughness: 0.82,
+    metalness: 0.04,
+    side: THREE.DoubleSide,
+  }),
+  2: new THREE.MeshStandardMaterial({
+    color: "#426b3d",
+    roughness: 0.86,
+    metalness: 0.03,
+    side: THREE.DoubleSide,
+  }),
+};
 
 function loadWallTexture(path) {
   const texture = wallTextureLoader.load(path);
@@ -191,6 +218,88 @@ function createWallGeometry(width, height, depth, seed) {
   return geometry;
 }
 
+function createCrestGeometry(width, height, thickness) {
+  const halfWidth = width / 2;
+  const shape = new THREE.Shape();
+
+  shape.moveTo(-halfWidth, height * 0.32);
+  shape.lineTo(halfWidth, height * 0.32);
+  shape.lineTo(halfWidth * 0.82, -height * 0.18);
+  shape.quadraticCurveTo(0, -height * 0.5, -halfWidth * 0.82, -height * 0.18);
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.008,
+    bevelThickness: 0.004,
+    depth: thickness,
+  });
+  geometry.center();
+  return geometry;
+}
+
+function createWallOwnerMarker(axis, width, depth, ownerId) {
+  const emblemMaterial = WALL_OWNER_EMBLEM_MATERIALS[ownerId];
+
+  if (!emblemMaterial) {
+    return null;
+  }
+
+  const group = new THREE.Group();
+  const isHorizontal = axis == "horizontal";
+  const longSide = isHorizontal ? width : depth;
+  const crestWidth = Math.min(WALL_OWNER_CREST_WIDTH, longSide * 0.25);
+  const crestHeight = Math.min(WALL_OWNER_CREST_HEIGHT, WALL_HEIGHT * 0.48);
+  const crestGeometry = createCrestGeometry(
+    crestWidth,
+    crestHeight,
+    WALL_OWNER_CREST_THICKNESS,
+  );
+  const emblemGeometry = createCrestGeometry(
+    crestWidth * WALL_OWNER_EMBLEM_SCALE,
+    crestHeight * WALL_OWNER_EMBLEM_SCALE,
+    WALL_OWNER_EMBLEM_THICKNESS,
+  );
+  const cornerOffset = crestWidth * 0.85;
+  const crestY = WALL_HEIGHT * 0.3;
+  const faceOffset = -0.02;
+
+  for (const side of [-1, 1]) {
+    const crest = new THREE.Group();
+    const plate = new THREE.Mesh(crestGeometry, WALL_OWNER_PLAQUE_MATERIAL);
+    const emblem = new THREE.Mesh(emblemGeometry, emblemMaterial);
+
+    plate.castShadow = true;
+    plate.receiveShadow = true;
+    emblem.castShadow = true;
+    emblem.receiveShadow = true;
+    emblem.position.z =
+      WALL_OWNER_CREST_THICKNESS / 2 + WALL_OWNER_EMBLEM_THICKNESS / 2 + 0.008;
+    crest.add(plate, emblem);
+
+    if (isHorizontal) {
+      crest.position.set(
+        -width / 2 + cornerOffset,
+        crestY,
+        side * (depth / 2 + faceOffset),
+      );
+      crest.rotation.y = side > 0 ? 0 : Math.PI;
+    } else {
+      crest.position.set(
+        side * (width / 2 + faceOffset),
+        crestY,
+        -depth / 2 + cornerOffset,
+      );
+      crest.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+    }
+
+    group.add(crest);
+  }
+
+  return group;
+}
+
 export function clearGroup(group) {
   group.clear();
 }
@@ -205,16 +314,23 @@ export function createPlacedWallMesh(axis, wall) {
     { axis, row: wall.pos.row, col: wall.pos.col },
     wall.length ?? 2,
   );
+  const group = new THREE.Group();
   const mesh = new THREE.Mesh(
     createWallGeometry(width, WALL_HEIGHT, depth, seed),
     createWallMaterial(),
   );
+  const ownerMarker = createWallOwnerMarker(axis, width, depth, wall.ownerId);
 
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
+  group.add(mesh);
 
-  return mesh;
+  if (ownerMarker) {
+    group.add(ownerMarker);
+  }
+
+  group.position.set(center.x, CELL_HEIGHT + WALL_HEIGHT / 2, center.z);
+  return group;
 }
 
 export function createReserveWallMesh(reserveWallKey, isSelected = false) {
