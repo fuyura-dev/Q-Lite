@@ -95,11 +95,11 @@ coro::generator<GridPosition> DoublePawnMoveList(const Position& pos) {
     for (auto current_vector : kAdjacent) {
         GridPosition new_grid_pos = grid_pos + current_vector.second;
         if (InBounds(new_grid_pos) && !HasWall(pos, grid_pos, current_vector)) {
-            new_grid_pos = new_grid_pos + current_vector.second;
-            if (InBounds(new_grid_pos) &&
-                !HasWall(pos, grid_pos, current_vector) &&
-                new_grid_pos != other) {
-                co_yield new_grid_pos;
+            GridPosition new_grid_pos_2 = new_grid_pos + current_vector.second;
+            if (InBounds(new_grid_pos_2) &&
+                !HasWall(pos, new_grid_pos, current_vector) &&
+                new_grid_pos_2 != other) {
+                co_yield new_grid_pos_2;
             }
         }
     }
