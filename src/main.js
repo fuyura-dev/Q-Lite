@@ -100,12 +100,14 @@ const MOCK_SNAPSHOT = {
       row: 6,
       col: 3,
       wallsRemaining: [4, 3, 1],
+      extraWalls: 0,
     },
     {
       id: 2,
       row: 0,
       col: 3,
       wallsRemaining: [4, 3, 1],
+      extraWalls: 2,
     },
   ],
   horizontalWalls: [
@@ -164,6 +166,17 @@ function getClassLabel(classId) {
   }
 
   return classId.charAt(0).toUpperCase() + classId.slice(1);
+}
+
+function getWallsLabel(player) {
+  if (!player?.wallsRemaining) {
+    return "-";
+  }
+
+  const wallsLabel = player.wallsRemaining.join(" / ");
+  return player.extraWalls > 0
+    ? `${wallsLabel} + ${player.extraWalls}`
+    : wallsLabel;
 }
 
 function syncClassChoiceButtons() {
@@ -510,6 +523,7 @@ async function createEngineSnapshot() {
         row: await engine.getPlayerRow(1),
         col: await engine.getPlayerCol(1),
         wallsRemaining: await engine.getRemainingWalls(1),
+        extraWalls: await engine.getExtraWalls(1),
         classId: selectedPlayerClasses[1],
       },
       {
@@ -517,6 +531,7 @@ async function createEngineSnapshot() {
         row: await engine.getPlayerRow(2),
         col: await engine.getPlayerCol(2),
         wallsRemaining: await engine.getRemainingWalls(2),
+        extraWalls: await engine.getExtraWalls(2),
         classId: selectedPlayerClasses[2],
       },
     ],
@@ -565,12 +580,8 @@ function updateStatus(snapshot) {
       ? `Player ${winner} won`
       : `Player ${snapshot.currentTurn}`
     : "Unavailable";
-  infoPlayerOneWalls.textContent = playerOne
-    ? `${playerOne.wallsRemaining}`
-    : "-";
-  infoPlayerTwoWalls.textContent = playerTwo
-    ? `${playerTwo.wallsRemaining}`
-    : "-";
+  infoPlayerOneWalls.textContent = getWallsLabel(playerOne);
+  infoPlayerTwoWalls.textContent = getWallsLabel(playerTwo);
   if (infoPlayerOneClass) {
     infoPlayerOneClass.textContent = getClassLabel(playerOne?.classId);
   }

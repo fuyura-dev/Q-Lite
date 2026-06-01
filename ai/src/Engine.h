@@ -16,6 +16,7 @@ class Engine {
     int GetPlayerRow(int player) const;
     int GetPlayerCol(int player) const;
     std::vector<int> GetRemainingWalls(int player) const;
+    int GetExtraWalls(int player) const;
     std::vector<Wall> GetWalls() const;
     std::vector<GridPosition> GetLegalPawnMoves() const;
     int Evaluate() const;

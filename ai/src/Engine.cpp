@@ -30,6 +30,10 @@ std::vector<int> Engine::GetRemainingWalls(int player) const {
            std::ranges::to<std::vector<int>>();
 }
 
+int Engine::GetExtraWalls(int player) const {
+    return pos.GetSpecialState(ToColor(player)).extra_walls;
+}
+
 std::vector<Wall> Engine::GetWalls() const {
     return kAllWallMoves | std::views::filter([&](const auto w) {
                auto [grid_pos, side, length] = w;
