@@ -4,6 +4,10 @@ project(q-lite)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (EMSCRIPTEN)
+	add_compile_options(-fignore-exceptions)
+endif ()
+
 add_subdirectory(src)
 
 include(FetchContent)

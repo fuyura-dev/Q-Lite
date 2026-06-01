@@ -16,9 +16,12 @@ uint8_t Position::GetRemainingWalls(Color player, WallLength length) const {
     return remaining_walls[player][length];
 }
 
-bool Position::DoMove(const Move& move) {
+bool Position::DoMove(const Move& move, SpecialState* state) {
+    if (state) {
+        *state = special_states[current_turn];
+    }
     if (move.kind == MoveKind::kMovePawn) {
-        return MovePawn(move.pos);
+        return MovePawn(move.pos, move.use_move_two_tiles);
     }
     PlaceWall(move.pos, move.side, move.length);
     return false;
@@ -29,20 +32,27 @@ constexpr std::array kPlacedWallMask = {
                1LL | (1LL << kGridSize) | (1LL << (2 * kGridSize))},
     std::array{0b1LL, 0b11LL, 0b111LL}};
 
-void Position::UndoMove(const Move& move) {
+void Position::UndoMove(const Move& move, SpecialState state) {
     ChangeTurn();
+    special_states[current_turn] = state;
     if (move.kind == MoveKind::kMovePawn) {
         pawn_positions[current_turn] = move.pos;
     } else {
-        remaining_walls[current_turn][move.length]++;
+        if (!special_states[current_turn].extra_walls) {
+            remaining_walls[current_turn][move.length]++;
+        }
         walls[move.side][move.length] &= ~(1LL << move.pos.compress());
-        combined_walls[move.side] &=
+        combined_walls[GetCurrentTurn()][move.side] &=
             ~(kPlacedWallMask[move.side][move.length] << move.pos.compress());
     }
 }
 
-bool Position::MovePawn(GridPosition pos) {
+bool Position::MovePawn(GridPosition pos, bool move_two_tiles) {
     pawn_positions[current_turn] = pos;
+    SpecialState& state = special_states[current_turn];
+    if (state.can_move_two_tiles) {
+        state.move_two_tiles_available = !move_two_tiles;
+    }
     if (pos.row == kTargetRow[current_turn]) {
         ChangeTurn();
         return true;
@@ -53,13 +63,30 @@ bool Position::MovePawn(GridPosition pos) {
 
 void Position::PlaceWall(GridPosition pos, WallSide side, WallLength length) {
     walls[side][length] |= 1LL << pos.compress();
-    combined_walls[side] |= kPlacedWallMask[side][length] << pos.compress();
-    remaining_walls[current_turn][length]--;
+    combined_walls[GetCurrentTurn()][side] |= kPlacedWallMask[side][length]
+                                              << pos.compress();
+    SpecialState& state = special_states[current_turn];
+
+    if (state.extra_walls) {
+        state.extra_walls--;
+    } else {
+        remaining_walls[current_turn][length]--;
+    }
+
+    if (special_states[current_turn].can_move_two_tiles) {
+        special_states[current_turn].move_two_tiles_available = true;
+    }
     ChangeTurn();
 }
 
-bool Position::HasWall(GridPosition pos, WallSide side) const {
-    return combined_walls[side] & (1LL << pos.compress());
+bool Position::HasWallBoth(GridPosition pos, WallSide side) const {
+    return (combined_walls[kWhite][side] | combined_walls[kBlack][side]) &
+           (1LL << pos.compress());
+}
+
+bool Position::HasWallBuiltByEnemy(GridPosition pos, WallSide side) const {
+    Color other = GetCurrentTurn() == kWhite ? kBlack : kWhite;
+    return combined_walls[other][side] & (1LL << pos.compress());
 }
 
 bool Position::HasWall(GridPosition pos, WallSide side,
@@ -69,7 +96,9 @@ bool Position::HasWall(GridPosition pos, WallSide side,
 
 bool Position::CanPlaceWall(GridPosition pos, WallSide side,
                             WallLength length) const {
-    if (remaining_walls[current_turn][length] == 0) {
+    if (GetSpecialState(GetCurrentTurn()).extra_walls +
+            remaining_walls[current_turn][length] ==
+        0) {
         return false;
     }
     if (side == kRightSide &&
@@ -85,7 +114,7 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side,
         side == kRightSide ? GridPosition{1, 0} : GridPosition{0, 1};
 
     for (int8_t len = 0; len <= length; len++) {
-        if (HasWall(pos + vector * len, side)) {
+        if (HasWallBoth(pos + vector * len, side)) {
             return false;
         }
     }
@@ -94,21 +123,43 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side,
         return false;
     }
 
-    uint64_t right_walls = combined_walls[kRightSide];
-    uint64_t bot_walls = combined_walls[kBottomSide];
+    Color current = GetCurrentTurn();
+    Color other = current == kWhite ? kBlack : kWhite;
+
+    uint64_t right_walls_current = combined_walls[current][kRightSide];
+    uint64_t bot_walls_current = combined_walls[current][kBottomSide];
+
+    uint64_t right_walls_other = combined_walls[other][kRightSide];
+    uint64_t bot_walls_other = combined_walls[other][kBottomSide];
 
     if (side == kRightSide) {
-        right_walls |= kPlacedWallMask[kRightSide][length] << pos.compress();
+        right_walls_current |= kPlacedWallMask[kRightSide][length]
+                               << pos.compress();
     } else {
-        bot_walls |= kPlacedWallMask[kBottomSide][length] << pos.compress();
+        bot_walls_current |= kPlacedWallMask[kBottomSide][length]
+                             << pos.compress();
     }
 
-    auto reachable_for = [&](Color color) {
+    auto reachable_for = [&](Color color, uint64_t right_walls_current,
+                             uint64_t bot_walls_current,
+                             uint64_t right_walls_other,
+                             uint64_t bot_walls_other) {
+        uint64_t right_walls = right_walls_other;
+        uint64_t bot_walls = bot_walls_other;
+
+        if (!GetSpecialState(color).can_pass_walls) {
+            right_walls |= right_walls_current;
+            bot_walls |= bot_walls_current;
+        }
+
         return IsReachable(pawn_positions[color], kTargetRow[color],
                            right_walls, bot_walls);
     };
 
-    return reachable_for(kWhite) && reachable_for(kBlack);
+    return reachable_for(current, right_walls_current, bot_walls_current,
+                         right_walls_other, bot_walls_other) &&
+           reachable_for(other, right_walls_other, bot_walls_other,
+                         right_walls_current, bot_walls_current);
 }
 
 constexpr auto kWinningScore = std::numeric_limits<Score>::max() / 3;
@@ -122,10 +173,24 @@ Score Position::Evaluate() const {  // positive  if white is winning
         return -kWinningScore;
     }
 
-    auto evaluate_for = [&](Color color) -> Score {
-        auto distance =
-            BFS(pawn_positions[color], kTargetRow[color],
-                combined_walls[kRightSide], combined_walls[kBottomSide]);
+    uint64_t right_walls_white = combined_walls[kWhite][kRightSide];
+    uint64_t bot_walls_white = combined_walls[kWhite][kBottomSide];
+
+    uint64_t right_walls_black = combined_walls[kBlack][kRightSide];
+    uint64_t bot_walls_black = combined_walls[kBlack][kBottomSide];
+
+    auto evaluate_for = [&](Color color, uint64_t right_walls_current,
+                            uint64_t bot_walls_current,
+                            uint64_t right_walls_other,
+                            uint64_t bot_walls_other) -> Score {
+        uint64_t right_walls = right_walls_other;
+        uint64_t bot_walls = bot_walls_other;
+        if (!GetSpecialState(color).can_pass_walls) {
+            right_walls |= right_walls_current;
+            bot_walls |= bot_walls_current;
+        }
+        auto distance = BFS(pawn_positions[color], kTargetRow[color],
+                            right_walls, bot_walls);
 
         return (kTotalCells - distance) +
                static_cast<Score>(remaining_walls[color][kOne] +
@@ -133,12 +198,22 @@ Score Position::Evaluate() const {  // positive  if white is winning
                                   remaining_walls[color][kThree]);
     };
 
-    return evaluate_for(kWhite) - evaluate_for(kBlack);
+    return evaluate_for(kWhite, right_walls_white, bot_walls_white,
+                        right_walls_black, bot_walls_black) -
+           evaluate_for(kBlack, right_walls_black, bot_walls_black,
+                        right_walls_white, bot_walls_white);
 }
 
 bool Position::IsFinished() const {
     return pawn_positions[kWhite].row == kTargetRow[kWhite] ||
            pawn_positions[kBlack].row == kTargetRow[kBlack];
+}
+SpecialState& Position::GetSpecialState(Color player) {
+    return special_states[player];
+}
+
+const SpecialState& Position::GetSpecialState(Color player) const {
+    return special_states[player];
 }
 
 consteval auto Transpose(auto Checks) {

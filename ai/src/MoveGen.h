@@ -21,4 +21,5 @@ inline const auto kAllWallMoves =
 coro::generator<GridPosition> AdjacentMoveList(GridPosition grid_pos,
                                                const Position& pos);
 coro::generator<GridPosition> PawnMoveList(const Position& pos);
+coro::generator<Move> AllPawnMoveList(const Position& pos);
 coro::generator<Move> AllMoveList(const Position& pos);

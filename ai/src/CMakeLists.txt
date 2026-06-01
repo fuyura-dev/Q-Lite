@@ -22,6 +22,7 @@ target_link_libraries(q-liteengine libcoro range-v3)
 
 
 if (EMSCRIPTEN)
+	target_compile_options(q-liteengine PUBLIC -Wno-deprecated-declarations)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../src/wasm")
 	add_executable(wasmbuild
 		Bindings.cpp
@@ -36,5 +37,5 @@ if (EMSCRIPTEN)
 			"-sEXPORT_ES6"
 	)
 
-	include_directories(wasmbuild PUBLIC "${CMAKE_SOURCE_DIR}/emsdk/upstream/emscripten/system/include")
+	target_include_directories(wasmbuild PUBLIC "${CMAKE_SOURCE_DIR}/emsdk/upstream/emscripten/system/include")
 endif()
