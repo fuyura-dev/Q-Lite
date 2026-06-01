@@ -15,6 +15,7 @@ import { createGrassLaneUnderlay } from "./grassLanes";
 
 const BOARD_TEXTURE_REPEAT = 1.3;
 const TOP_PANEL_TEXTURE_REPEAT = 0.9;
+const BASE_EDGE_STONE_COUNT = 100;
 const CELL_LIGHTNESS_VARIATION = [
   [0.02, -0.04, 0.03, -0.01, 0.04, -0.03, 0.01],
   [-0.03, 0.01, -0.02, 0.04, -0.01, 0.03, -0.04],
@@ -112,7 +113,13 @@ function applyBoardSurfaceUvs(geometry, centerX, centerZ, surfaceSize) {
   uv.needsUpdate = true;
 }
 
-function applyWrappedBoardUvs(geometry, centerX, centerZ, surfaceSize) {
+function applyWrappedBoardUvs(
+  geometry,
+  centerX,
+  centerZ,
+  surfaceSize,
+  verticalSpan = CELL_HEIGHT,
+) {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   const uv = geometry.getAttribute("uv");
@@ -133,7 +140,8 @@ function applyWrappedBoardUvs(geometry, centerX, centerZ, surfaceSize) {
 
     const sideU =
       Math.abs(normal.getX(i)) > Math.abs(normal.getZ(i)) ? topV : topU;
-    const verticalDrop = 1 - (position.getY(i) + CELL_HEIGHT / 2) / CELL_HEIGHT;
+    const verticalDrop =
+      1 - (position.getY(i) + verticalSpan / 2) / verticalSpan;
     const sideV = topV + verticalDrop * sideTextureDrop;
 
     uv.setXY(i, sideU, sideV);
@@ -318,6 +326,120 @@ function createJaggedTopMesh(
   return mesh;
 }
 
+function createJaggedSlabMesh(
+  width,
+  depth,
+  height,
+  centerX,
+  centerZ,
+  material,
+  sideMaterial,
+) {
+  const geometry = new THREE.ExtrudeGeometry(
+    createJaggedRectShape(11, 17, width, depth, 10),
+    {
+      bevelEnabled: true,
+      bevelSegments: 2,
+      bevelSize: 0.05,
+      bevelThickness: 0.03,
+      depth: height,
+    },
+  );
+
+  geometry.rotateX(-Math.PI / 2);
+  roughenTopSurface(geometry, 13, 19, 0.2);
+  geometry.computeVertexNormals();
+  applyWrappedBoardUvs(geometry, centerX, centerZ, BOARD_DEPTH + 1.4, height);
+
+  const mesh = new THREE.Mesh(geometry, [material, sideMaterial]);
+  mesh.receiveShadow = true;
+  mesh.castShadow = true;
+  mesh.position.set(centerX, -height + 0.05, centerZ);
+  return mesh;
+}
+
+function createJaggedPanelMesh(
+  width,
+  depth,
+  height,
+  centerX,
+  centerZ,
+  material,
+  sideMaterial,
+) {
+  const geometry = new THREE.ExtrudeGeometry(
+    createJaggedRectShape(23, 29, width, depth, 2),
+    {
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.018,
+      bevelThickness: 0.012,
+      depth: height,
+    },
+  );
+
+  geometry.rotateX(-Math.PI / 2);
+  roughenTopSurface(geometry, 31, 37, 0.1);
+  geometry.computeVertexNormals();
+  applyWrappedBoardUvs(geometry, centerX, centerZ, BOARD_DEPTH + 0.84, height);
+
+  const mesh = new THREE.Mesh(geometry, [material, sideMaterial]);
+  mesh.receiveShadow = true;
+  mesh.castShadow = true;
+  mesh.position.set(centerX, -height + 0.06, centerZ);
+  return mesh;
+}
+
+function createStoneMaterial() {
+  return new THREE.MeshStandardMaterial({
+    color: "#6f7568",
+    roughness: 0.96,
+    metalness: 0.01,
+  });
+}
+
+function createDecorativeStone(index, material) {
+  const radius = 0.05 + seededNoise(index, 4, 12) * 0.08;
+  const geometry = new THREE.DodecahedronGeometry(radius, 0);
+  const mesh = new THREE.Mesh(geometry, material);
+  const flattenY = 0.45 + seededNoise(index, 9, 21) * 0.35;
+
+  mesh.scale.set(
+    1 + seededNoise(index, 2, 33) * 0.7,
+    flattenY,
+    0.75 + seededNoise(index, 5, 48) * 0.8,
+  );
+  mesh.rotation.set(
+    seededNoise(index, 6, 53) * Math.PI,
+    seededNoise(index, 7, 54) * Math.PI,
+    seededNoise(index, 8, 55) * Math.PI,
+  );
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function createBoardEdgeStones(frameSize) {
+  const group = new THREE.Group();
+  const material = createStoneMaterial();
+  const outerLimit = frameSize / 2 - 0.28;
+  const edgeBand = 0.55;
+
+  for (let i = 0; i < BASE_EDGE_STONE_COUNT; i++) {
+    const side = Math.floor(seededNoise(i, 1, 7) * 4);
+    const along = -outerLimit + seededNoise(i, 2, 8) * outerLimit * 2;
+    const edgeOffset = outerLimit - seededNoise(i, 3, 9) * edgeBand;
+    const stone = createDecorativeStone(i, material);
+    const x = side < 2 ? along : side == 2 ? -edgeOffset : edgeOffset;
+    const z = side < 2 ? (side == 0 ? -edgeOffset : edgeOffset) : along;
+
+    stone.position.set(x, 0.09, z);
+    group.add(stone);
+  }
+
+  return group;
+}
+
 function createWallSlotTargets() {
   const horizontalSlotMeshes = [];
   const verticalSlotMeshes = [];
@@ -383,23 +505,42 @@ export function createBoardGroup() {
     roughness: 1,
     repeat: 1.05,
   });
+  const frameTopMaterial = createBoardFloorMaterial({
+    color: "#776d5b",
+    normalScale: 0.34,
+    roughness: 1,
+    repeat: 1,
+  });
+  const frameSideMaterial = createBoardFloorMaterial({
+    color: "#4b3828",
+    normalScale: 0.22,
+    roughness: 1,
+    repeat: 0.92,
+  });
   const frameSize = BOARD_DEPTH + 1.4;
   const topPanelSize = BOARD_DEPTH + 0.84;
 
-  const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(frameSize, 0.7, frameSize),
-    BOARD_MATERIALS.frame,
+  const frame = createJaggedSlabMesh(
+    frameSize,
+    frameSize,
+    0.7,
+    0,
+    0,
+    frameTopMaterial,
+    frameSideMaterial,
   );
-  frame.receiveShadow = true;
-  frame.position.y = -0.3;
   boardGroup.add(frame);
+  boardGroup.add(createBoardEdgeStones(frameSize));
 
-  const topPanel = new THREE.Mesh(
-    new THREE.BoxGeometry(topPanelSize, 0.16, topPanelSize),
+  const topPanel = createJaggedPanelMesh(
+    topPanelSize,
+    topPanelSize,
+    0.16,
+    0,
+    0,
     floorMaterial,
+    frameSideMaterial,
   );
-  topPanel.receiveShadow = true;
-  topPanel.position.y = -0.02;
   boardGroup.add(topPanel);
   boardGroup.add(createGrassLaneUnderlay());
 
