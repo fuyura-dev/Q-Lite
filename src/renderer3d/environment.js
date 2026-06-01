@@ -16,7 +16,7 @@ const FRAME_SIZE = BOARD_DEPTH + 1.4;
 const ENVIRONMENT_MODELS = [
   {
     path: CHINESE_GRASS_MODEL_PATH,
-    count: 1,
+    count: 0,
     targetWidth: 10.72,
     minScale: 0.72,
     scaleRange: 0.46,
@@ -30,18 +30,18 @@ const ENVIRONMENT_MODELS = [
     minScale: 0.8,
     scaleRange: 0.45,
     y: 0.02,
-    placementSalt: 30,
+    placementSalt: 145,
     innerChance: 0.25,
   },
   {
     path: GRASS_PATCHES_MODEL_PATH,
-    count: 40,
+    count: 30,
     targetWidth: 3,
     minScale: 0.75,
     scaleRange: 0.35,
     y: 0.02,
-    placementSalt: 200,
-    innerChance: 0.5,
+    placementSalt: 250,
+    innerChance: 0.6,
     castShadow: false,
   },
   {
@@ -56,39 +56,74 @@ const ENVIRONMENT_MODELS = [
   },
   {
     path: GLOWING_MUSHROOM_MODEL_PATH,
-    count: 5,
+    count: 7,
     targetWidth: 0.45,
     minScale: 0.85,
     scaleRange: 0.35,
     y: 0.03,
-    placementSalt: 400,
-    innerChance: 0.3,
+    placementSalt: 570,
+    innerChance: 0.5,
+    glowColor: "#7df7ff",
+    emissiveIntensity: 0.18,
+    lightColor: "#4576ff",
+    glowIntensity: 2,
+    glowDistance: 3,
+    glowY: 1,
+    minDistance: 1.1,
   },
   {
     path: GLOWING_MUSHROOM_ALT_MODEL_PATH,
-    count: 4,
+    count: 7,
     targetWidth: 0.5,
     minScale: 0.75,
     scaleRange: 0.35,
     y: 0.03,
-    placementSalt: 500,
-    innerChance: 0.3,
+    placementSalt: 330,
+    innerChance: 0.4,
+    glowColor: "#a978ff",
+    emissiveIntensity: 5,
+    lightColor: "#a978ff",
+    glowIntensity: 3,
+    glowDistance: 5,
+    glowY: 1,
+    minDistance: 1.1,
   },
   {
     path: MAGIC_MUSHROOM_MODEL_PATH,
     count: 6,
-    targetWidth: 0.55,
+    targetWidth: 0.4,
     minScale: 0.8,
     scaleRange: 0.4,
     y: 0.5,
-    placementSalt: 700,
-    innerChance: 0.3,
+    placementSalt: 740,
+    innerChance: 0.4,
+    glowColor: "rgb(14, 63, 47)",
+    emissiveIntensity: 0.2,
+    lightColor: "#40c768",
+    glowIntensity: 7,
+    glowDistance: 2.4,
+    glowY: 1,
+    minDistance: 1.1,
   },
 ];
 
 function seededNoise(index, salt) {
   const value = Math.sin(index * 127.1 + salt * 311.7) * 43758.5453;
   return value - Math.floor(value);
+}
+
+function prepareMaterial(material, config) {
+  const preparedMaterial = config.glowColor ? material.clone() : material;
+
+  preparedMaterial.side = THREE.DoubleSide;
+
+  if (config.glowColor && preparedMaterial.emissive) {
+    preparedMaterial.emissive.set(config.glowColor);
+    preparedMaterial.emissiveIntensity = config.emissiveIntensity ?? 0.18;
+  }
+
+  preparedMaterial.needsUpdate = true;
+  return preparedMaterial;
 }
 
 function prepareEnvironmentModel(model, config) {
@@ -115,7 +150,9 @@ function prepareEnvironmentModel(model, config) {
     child.castShadow = config.castShadow ?? true;
     child.receiveShadow = true;
 
-    child.material.side = THREE.DoubleSide;
+    child.material = Array.isArray(child.material)
+      ? child.material.map((material) => prepareMaterial(material, config))
+      : prepareMaterial(child.material, config);
   });
 
   return model;
@@ -161,10 +198,55 @@ function getDecorationPosition(index, config) {
   return getEdgeDecorationPosition(index);
 }
 
-function createEnvironmentPatch(sourceModel, index, config) {
+function isTooCloseToOccupied(position, occupiedPositions, minDistance) {
+  const minDistanceSq = minDistance * minDistance;
+
+  return occupiedPositions.some((occupiedPosition) => {
+    const dx = position.x - occupiedPosition.x;
+    const dz = position.z - occupiedPosition.z;
+
+    return dx * dx + dz * dz < minDistanceSq;
+  });
+}
+
+function createEnvironmentPlacement(index, config, occupiedPositions) {
+  const minDistance = config.minDistance ?? 0;
+  const maxAttempts = minDistance ? 30 : 1;
+  let fallbackPlacement = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const placementIndex = index + config.placementSalt + attempt * 997;
+    const position = getDecorationPosition(placementIndex, config);
+    const placement = { placementIndex, position };
+
+    fallbackPlacement = placement;
+
+    if (
+      !minDistance ||
+      !isTooCloseToOccupied(position, occupiedPositions, minDistance)
+    ) {
+      occupiedPositions.push(position);
+      return placement;
+    }
+  }
+
+  occupiedPositions.push(fallbackPlacement.position);
+  return fallbackPlacement;
+}
+
+function createEnvironmentPlacements(config, occupiedPositions) {
+  const placements = [];
+
+  for (let i = 0; i < config.count; i++) {
+    placements.push(createEnvironmentPlacement(i, config, occupiedPositions));
+  }
+
+  return placements;
+}
+
+function createEnvironmentPatch(sourceModel, placement, config) {
   const patch = sourceModel.clone(true);
-  const placementIndex = index + config.placementSalt;
-  const position = getDecorationPosition(placementIndex, config);
+  const { placementIndex, position } = placement;
   const scale =
     config.minScale + seededNoise(placementIndex, 4) * config.scaleRange;
 
@@ -172,21 +254,39 @@ function createEnvironmentPatch(sourceModel, index, config) {
   patch.rotation.y = seededNoise(placementIndex, 5) * Math.PI * 2;
   patch.scale.multiplyScalar(scale);
 
+  if (config.glowColor) {
+    const light = new THREE.PointLight(
+      config.lightColor ?? config.glowColor,
+      config.glowIntensity ?? 0.6,
+      config.glowDistance ?? 2,
+      2,
+    );
+
+    light.position.set(0, config.glowY ?? 0.35, 0);
+    patch.add(light);
+  }
+
   return patch;
 }
 
 export function createBoardEnvironment() {
   const group = new THREE.Group();
   const loader = new GLTFLoader();
+  const occupiedMushroomPositions = [];
 
   for (const config of ENVIRONMENT_MODELS) {
+    const occupiedPositions = config.minDistance
+      ? occupiedMushroomPositions
+      : [];
+    const placements = createEnvironmentPlacements(config, occupiedPositions);
+
     loader.load(
       config.path,
       (gltf) => {
         const sourceModel = prepareEnvironmentModel(gltf.scene, config);
 
-        for (let i = 0; i < config.count; i++) {
-          group.add(createEnvironmentPatch(sourceModel, i, config));
+        for (const placement of placements) {
+          group.add(createEnvironmentPatch(sourceModel, placement, config));
         }
       },
       undefined,
