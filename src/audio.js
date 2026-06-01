@@ -7,7 +7,7 @@ const musicTracks = {
   },
   game: {
     audio: new Audio("/audio/music/game-loop.mp3"),
-    volume: 0.3,
+    volume: 0.2,
     startAt: 5,
     fadeFrame: null,
   },
@@ -112,6 +112,8 @@ function attachUnlockListeners() {
 
   unlockListenersAttached = true;
   window.addEventListener("pointerdown", retryDesiredMusic, { once: true });
+  window.addEventListener("pointerup", retryDesiredMusic, { once: true });
+  window.addEventListener("click", retryDesiredMusic, { once: true });
   window.addEventListener("keydown", retryDesiredMusic, { once: true });
   window.addEventListener("touchstart", retryDesiredMusic, { once: true });
 }
@@ -175,7 +177,16 @@ function playSfx(name) {
   track.audio.pause();
   track.audio.currentTime = 0;
   track.audio.volume = track.volume;
-  track.audio.play().catch(() => {});
+  track.audio
+    .play()
+    .then(() => {
+      if (desiredMusic) {
+        retryDesiredMusic();
+      }
+    })
+    .catch(() => {
+      attachUnlockListeners();
+    });
 }
 
 export function playOpeningMusic() {

@@ -83,7 +83,7 @@ function createWallMaterial(isSelected = false) {
 
   if (!wallMaterials.has(key)) {
     const sideMaterial = new THREE.MeshStandardMaterial({
-      color: isSelected ? "#f0a85f" : "#d4b88d",
+      color: isSelected ? "#f0a85f" : "#ffffff",
       map: WALL_TEXTURES.colorMap,
       normalMap: WALL_TEXTURES.normalMap,
       normalScale: new THREE.Vector2(0.42, 0.42),
@@ -96,7 +96,7 @@ function createWallMaterial(isSelected = false) {
       emissiveIntensity: isSelected ? 0.44 : 0.26,
     });
     const topMaterial = sideMaterial.clone();
-    topMaterial.color.set(isSelected ? "#ffc979" : "#f0d5a7");
+    topMaterial.color.set(isSelected ? "#ffc979" : "#ffffff");
     topMaterial.emissive.set(isSelected ? "#9d581d" : "#433016");
     topMaterial.emissiveIntensity = isSelected ? 0.5 : 0.34;
 

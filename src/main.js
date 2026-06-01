@@ -53,6 +53,8 @@ const infoPlayerTwoClass = document.getElementById("info-player-two-class");
 const devInfo = document.getElementById("dev-info");
 const devInfoText = document.getElementById("dev-info-text");
 const debugToggle = document.getElementById("debug-toggle");
+const gameSidebar = document.querySelector(".game-sidebar");
+const gameInfoToggle = document.getElementById("game-info-toggle");
 
 const boardViewport = document.getElementById("board-viewport");
 const classPreview = classPreviewViewport
@@ -77,6 +79,7 @@ let aiLoopToken = 0;
 let latestSnapshot = null;
 let gameStarted = false;
 let announcedWinner = null;
+let gameInfoCollapsed = false;
 const wallOwners = new Map();
 
 let buildTime = "";
@@ -708,6 +711,10 @@ function updateControlState(snapshot) {
   }
 }
 
+function syncGameInfoCollapsed() {
+  gameSidebar?.classList.toggle("is-info-collapsed", gameInfoCollapsed);
+}
+
 async function refresh() {
   const snapshot = await getSnapshot();
   latestSnapshot = snapshot;
@@ -834,11 +841,14 @@ async function initializeEngine() {
       Object.entries(pawnClasses).map(([key, value]) => [value, key]),
     );
     engineStatus = "Engine Ready";
+    await refresh();
+    return true;
   } catch (error) {
     engineStatus = "Engine not loaded";
     console.error(error);
+    await refresh();
+    return false;
   }
-  refresh();
 }
 
 modeSelect?.addEventListener("change", async () => {
@@ -890,6 +900,10 @@ for (const button of classChoiceButtons) {
 }
 
 startGameButton?.addEventListener("click", () => {
+  if (!engine) {
+    return;
+  }
+
   playStartGameSound();
   startGame();
 });
@@ -903,6 +917,12 @@ debugToggle?.addEventListener("change", () => {
   if (devInfo) {
     devInfo.hidden = !debugToggle.checked;
   }
+});
+
+gameInfoToggle?.addEventListener("click", () => {
+  playGameButtonSound();
+  gameInfoCollapsed = !gameInfoCollapsed;
+  syncGameInfoCollapsed();
 });
 
 aiToggleButton?.addEventListener("click", async () => {
@@ -944,6 +964,7 @@ winnerMainMenuButton?.addEventListener("click", () => {
 
 syncMenuModeButtons();
 syncClassChoiceButtons();
+syncGameInfoCollapsed();
 playOpeningMusic();
 refresh();
 initializeEngine();

@@ -206,31 +206,44 @@
 
         <aside class="game-sidebar">
           <div class="game-info">
-            <h2 class="game-info__title">Game Info</h2>
-            <div class="info-card">
-              <p class="info-card__label">Current Turn</p>
-              <p class="info-card__value" id="info-current-turn">Player 1</p>
+            <div class="game-info__header">
+              <h2 class="game-info__title">Game Info</h2>
+              <button
+                id="game-info-toggle"
+                class="game-info__toggle"
+                type="button"
+              >
+                <span class="game-info__toggle-icon"></span>
+              </button>
             </div>
-            <div class="info-card">
-              <p class="info-card__label">Player 1 Walls</p>
-              <p class="info-card__value" id="info-player-one-walls">8</p>
+            <div class="game-info__body" id="game-info-body">
+              <div class="info-card">
+                <p class="info-card__label">Current Turn</p>
+                <p class="info-card__value" id="info-current-turn">Player 1</p>
+              </div>
+              <div class="info-card">
+                <p class="info-card__label">Player 1 Walls</p>
+                <p class="info-card__value" id="info-player-one-walls">8</p>
+              </div>
+              <div class="info-card">
+                <p class="info-card__label">Player 2 Walls</p>
+                <p class="info-card__value" id="info-player-two-walls">8</p>
+              </div>
+              <div class="info-card">
+                <p class="info-card__label">Player 1 Class</p>
+                <p class="info-card__value" id="info-player-one-class">Ghost</p>
+              </div>
+              <div class="info-card">
+                <p class="info-card__label">Player 2 Class</p>
+                <p class="info-card__value" id="info-player-two-class">
+                  Runner
+                </p>
+              </div>
+              <label for="" class="debug-toggle">
+                <input type="checkbox" id="debug-toggle" />
+                <span>Show Debug</span>
+              </label>
             </div>
-            <div class="info-card">
-              <p class="info-card__label">Player 2 Walls</p>
-              <p class="info-card__value" id="info-player-two-walls">8</p>
-            </div>
-            <div class="info-card">
-              <p class="info-card__label">Player 1 Class</p>
-              <p class="info-card__value" id="info-player-one-class">Ghost</p>
-            </div>
-            <div class="info-card">
-              <p class="info-card__label">Player 2 Class</p>
-              <p class="info-card__value" id="info-player-two-class">Runner</p>
-            </div>
-            <label for="" class="debug-toggle">
-              <input type="checkbox" id="debug-toggle" />
-              <span>Show Debug</span>
-            </label>
           </div>
 
           <div class="dev-info" id="dev-info" hidden>
