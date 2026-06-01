@@ -163,6 +163,8 @@ bool Position::CanPlaceWall(GridPosition pos, WallSide side,
 }
 
 constexpr auto kWinningScore = std::numeric_limits<Score>::max() / 3;
+constexpr Score kPathDistanceWeight = 10;
+constexpr Score kWallCountWeight = 1;
 
 Score Position::Evaluate() const {  // positive  if white is winning
     if (pawn_positions[kWhite].row == kTargetRow[kWhite]) {
@@ -192,10 +194,11 @@ Score Position::Evaluate() const {  // positive  if white is winning
         auto distance = BFS(pawn_positions[color], kTargetRow[color],
                             right_walls, bot_walls);
 
-        return (kTotalCells - distance) +
+        return (kTotalCells - distance) * kPathDistanceWeight +
                static_cast<Score>(remaining_walls[color][kOne] +
                                   remaining_walls[color][kTwo] +
-                                  remaining_walls[color][kThree]);
+                                  remaining_walls[color][kThree]) *
+                   kWallCountWeight;
     };
 
     return evaluate_for(kWhite, right_walls_white, bot_walls_white,
