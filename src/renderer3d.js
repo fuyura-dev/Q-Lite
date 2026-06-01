@@ -11,6 +11,7 @@ import { createSceneBundle } from "./renderer3d/scene";
 import { createFloatingIsland } from "./renderer3d/island";
 import { createBoardEnvironment } from "./renderer3d/environment";
 import { createPlayerLabel } from "./renderer3d/labels";
+import { createCaveBackground } from "./renderer3d/background";
 import {
   clearGroup,
   createPlacedWallMesh,
@@ -77,6 +78,8 @@ export function createRenderer3D(container, options = {}) {
 
   const worldGroup = new THREE.Group();
   scene.add(worldGroup);
+  const backgroundGroup = createCaveBackground();
+  scene.add(backgroundGroup);
 
   const { boardGroup, cellMeshes, horizontalSlotMeshes, verticalSlotMeshes } =
     createBoardGroup();
@@ -649,6 +652,7 @@ export function createRenderer3D(container, options = {}) {
     if (latestRenderOptions.menuActive) {
       worldGroup.rotation.y =
         (worldGroup.rotation.y + delta * MENU_ROTATION_SPEED) % FULL_TURN;
+      backgroundGroup.rotation.y = worldGroup.rotation.y;
       updateWinnerCameraFocus(delta);
       controls.update(delta);
       renderer.render(scene, camera);
@@ -664,6 +668,7 @@ export function createRenderer3D(container, options = {}) {
     );
     worldGroup.rotation.y +=
       (nearestTargetRotation - worldGroup.rotation.y) * 0.05;
+    backgroundGroup.rotation.y = worldGroup.rotation.y;
     updateWinnerCameraFocus(delta);
     controls.update(delta);
     renderer.render(scene, camera);
