@@ -83,20 +83,22 @@ function createWallMaterial(isSelected = false) {
 
   if (!wallMaterials.has(key)) {
     const sideMaterial = new THREE.MeshStandardMaterial({
-      color: isSelected ? "#b87438" : "#9d8060",
+      color: isSelected ? "#f0a85f" : "#d4b88d",
       map: WALL_TEXTURES.colorMap,
       normalMap: WALL_TEXTURES.normalMap,
       normalScale: new THREE.Vector2(0.42, 0.42),
-      roughness: isSelected ? 0.58 : 0.92,
+      roughness: isSelected ? 0.54 : 0.86,
       roughnessMap: WALL_TEXTURES.roughnessMap,
       metalness: 0.02,
       transparent: isSelected,
       opacity: isSelected ? 0.94 : 1,
-      emissive: isSelected ? "#5a2a00" : "#000000",
-      emissiveIntensity: isSelected ? 0.22 : 0,
+      emissive: isSelected ? "#8f4d17" : "#33210f",
+      emissiveIntensity: isSelected ? 0.44 : 0.26,
     });
     const topMaterial = sideMaterial.clone();
-    topMaterial.color.set(isSelected ? "#d79a52" : "#d0b894");
+    topMaterial.color.set(isSelected ? "#ffc979" : "#f0d5a7");
+    topMaterial.emissive.set(isSelected ? "#9d581d" : "#433016");
+    topMaterial.emissiveIntensity = isSelected ? 0.5 : 0.34;
 
     wallMaterials.set(key, [
       sideMaterial,
@@ -396,11 +398,11 @@ export function createHoverWallMesh() {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
     new THREE.MeshStandardMaterial({
-      color: "#a07840",
+      color: "#f0bd62",
       transparent: true,
-      opacity: 0.55,
-      emissive: "#3a2500",
-      emissiveIntensity: 0.3,
+      opacity: 0.68,
+      emissive: "#8a5a12",
+      emissiveIntensity: 0.6,
     }),
   );
   mesh.visible = false;
@@ -411,11 +413,11 @@ export function createSelectedWallMesh() {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_SPAN, WALL_HEIGHT, WALL_THICKNESS),
     new THREE.MeshStandardMaterial({
-      color: "#d07020",
+      color: "#ff9a34",
       transparent: true,
-      opacity: 0.82,
-      emissive: "#5a2500",
-      emissiveIntensity: 0.45,
+      opacity: 0.9,
+      emissive: "#a33f00",
+      emissiveIntensity: 0.75,
     }),
   );
   mesh.visible = false;
