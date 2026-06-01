@@ -1,5 +1,16 @@
 import { createRenderer3D } from "./renderer3d.js";
 import { createClassPreviewRenderer } from "./renderer3d/classPreview.js";
+import {
+  playActionSound,
+  playGameMusic,
+  playGameButtonSound,
+  playMenuSelectSound,
+  playOpeningMusic,
+  playStartGameSound,
+  playVictorySound,
+  stopGameMusic,
+  stopOpeningMusic,
+} from "./audio.js";
 
 const gameStage = document.querySelector(".game-stage");
 const mainMenu = document.getElementById("main-menu");
@@ -65,6 +76,7 @@ let aiAutoplayEnabled = true;
 let aiLoopToken = 0;
 let latestSnapshot = null;
 let gameStarted = false;
+let announcedWinner = null;
 const wallOwners = new Map();
 
 let buildTime = "";
@@ -276,6 +288,11 @@ function updateWinnerOverlay(snapshot) {
   const winner = getWinner(snapshot);
   const shouldShow = gameStarted && winner;
 
+  if (shouldShow && announcedWinner !== winner) {
+    announcedWinner = winner;
+    playVictorySound();
+  }
+
   if (winnerOverlay) {
     winnerOverlay.hidden = !shouldShow;
   }
@@ -457,6 +474,7 @@ async function tryPlaceSelectedWall(wallSlot) {
     return;
   }
 
+  playActionSound();
   rememberWallOwner(
     wallSlot.axis,
     {
@@ -512,6 +530,7 @@ async function tryMovePawn(moveTarget) {
     return;
   }
 
+  playActionSound();
   actionStatusLabel =
     result === engine.moveResult.WIN
       ? `Action: winning pawn move to (${moveTarget.row}, ${moveTarget.col})`
@@ -726,6 +745,7 @@ async function resetCurrentGame(actionLabel, isRestart = false) {
   if (engine && isRestart) {
     await engine.restartMatch();
   }
+  announcedWinner = null;
   wallOwners.clear();
   actionStatusLabel = actionLabel;
   clearSelections();
@@ -736,6 +756,8 @@ async function startGame() {
   if (!engine) {
     return;
   }
+  stopOpeningMusic();
+  playGameMusic();
   await engine.reset();
   await engine.setPlayerClass(1, pawnClasses[selectedPlayerClasses[1]]);
   if (!isHumanVsAiMode()) {
@@ -753,7 +775,10 @@ async function startGame() {
 
 async function showMainMenu() {
   gameStarted = false;
+  announcedWinner = null;
   cancelAiLoop();
+  stopGameMusic();
+  playOpeningMusic();
   gameStage?.classList.remove("is-playing");
   actionStatusLabel = "Action: returned to main menu";
   clearSelections();
@@ -833,6 +858,7 @@ for (const button of menuModeButtons) {
       return;
     }
 
+    playMenuSelectSound();
     modeSelect.value = button.dataset.menuMode;
     modeSelect.dispatchEvent(new Event("change"));
   });
@@ -840,6 +866,7 @@ for (const button of menuModeButtons) {
 
 for (const button of classChoiceButtons) {
   button.addEventListener("click", () => {
+    playMenuSelectSound();
     const playerId = Number(button.dataset.classChoicePlayer);
     selectedPlayerClasses[playerId] = button.dataset.classId;
     syncClassChoiceButtons();
@@ -863,10 +890,12 @@ for (const button of classChoiceButtons) {
 }
 
 startGameButton?.addEventListener("click", () => {
+  playStartGameSound();
   startGame();
 });
 
 mainMenuButton?.addEventListener("click", () => {
+  playGameButtonSound();
   showMainMenu();
 });
 
@@ -877,6 +906,7 @@ debugToggle?.addEventListener("change", () => {
 });
 
 aiToggleButton?.addEventListener("click", async () => {
+  playGameButtonSound();
   aiAutoplayEnabled = !aiAutoplayEnabled;
   actionStatusLabel = aiAutoplayEnabled
     ? "Action: AI autoplay resumed"
@@ -889,26 +919,31 @@ aiToggleButton?.addEventListener("click", async () => {
 });
 
 aiStepButton?.addEventListener("click", async () => {
+  playGameButtonSound();
   actionStatusLabel = "Action: stepping AI move";
   await refresh();
   await maybeRunAiTurn({ singleStep: true });
 });
 
 restartButton?.addEventListener("click", async () => {
+  playGameButtonSound();
   await resetCurrentGame("Action: game restarted", true);
   await maybeRunAiTurn();
 });
 
 winnerRestartButton?.addEventListener("click", async () => {
+  playGameButtonSound();
   await resetCurrentGame("Action: game restarted", true);
   await maybeRunAiTurn();
 });
 
 winnerMainMenuButton?.addEventListener("click", () => {
+  playGameButtonSound();
   showMainMenu();
 });
 
 syncMenuModeButtons();
 syncClassChoiceButtons();
+playOpeningMusic();
 refresh();
 initializeEngine();
