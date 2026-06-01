@@ -49,6 +49,7 @@ export function createRenderer3D(container, options = {}) {
   const FULL_TURN = Math.PI * 2;
   const MENU_ROTATION_SPEED = 0.18;
   const WINNER_CAMERA_ORBIT_SPEED = 0.22;
+  const FPS_UPDATE_INTERVAL_MS = 500;
   const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 8, 10);
   const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
 
@@ -65,6 +66,8 @@ export function createRenderer3D(container, options = {}) {
   let selectedReserveWallKey = "";
   let winnerCameraActive = false;
   let winnerOrbitAngle = 0;
+  let fpsFrameCount = 0;
+  let fpsLastUpdateTime = performance.now();
   const reserveWallStore = createReserveWallStore();
   const winnerFocusPosition = new THREE.Vector3();
   const winnerCameraPosition = new THREE.Vector3();
@@ -293,6 +296,12 @@ export function createRenderer3D(container, options = {}) {
   function notifySelectMoveTarget(moveTarget) {
     if (options.onSelectMoveTarget) {
       options.onSelectMoveTarget(moveTarget);
+    }
+  }
+
+  function notifyFps(fps) {
+    if (options.onFpsUpdate) {
+      options.onFpsUpdate(fps);
     }
   }
 
@@ -625,6 +634,14 @@ export function createRenderer3D(container, options = {}) {
   function animate() {
     animationFrameId = window.requestAnimationFrame(animate);
     const delta = clock.getDelta();
+    const now = performance.now();
+    fpsFrameCount++;
+
+    if (now - fpsLastUpdateTime >= FPS_UPDATE_INTERVAL_MS) {
+      notifyFps(Math.round((fpsFrameCount * 1000) / (now - fpsLastUpdateTime)));
+      fpsFrameCount = 0;
+      fpsLastUpdateTime = now;
+    }
 
     if (latestRenderOptions.menuActive) {
       worldGroup.rotation.y =

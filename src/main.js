@@ -59,6 +59,7 @@ let selectedReserveWall = null;
 let actionStatusLabel = "Action: none";
 let selectedMoveTargetLabel = "Selected Move Target: none";
 let evaluation = 0;
+let fpsLabel = "FPS: --";
 let aiTurnInProgress = false;
 let aiAutoplayEnabled = true;
 let aiLoopToken = 0;
@@ -127,7 +128,7 @@ const MOCK_SNAPSHOT = {
 };
 
 function updateDevInfo() {
-  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}<br>Evaluation: ${evaluation}<br>Build Time: ${buildTime}`;
+  devInfoText.innerHTML = `Engine Status: ${engineStatus}<br>${fpsLabel}<br>${hoverCellLabel}<br>${hoverWallLabel}<br>${selectedCellLabel}<br>${selectedWallLabel}<br>${selectedReserveWallLabel}<br>${selectedMoveTargetLabel}<br>${actionStatusLabel}<br>Evaluation: ${evaluation}<br>Build Time: ${buildTime}`;
 }
 
 function getWallSide(axis) {
@@ -567,6 +568,10 @@ const renderer = createRenderer3D(boardViewport, {
       : "Selected Move Target: none";
     updateDevInfo();
     tryMovePawn(moveTarget);
+  },
+  onFpsUpdate: (fps) => {
+    fpsLabel = `FPS: ${fps}`;
+    updateDevInfo();
   },
 });
 
