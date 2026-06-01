@@ -392,6 +392,17 @@ export function createRenderer3D(container, options = {}) {
   }
 
   function setHoveredWallSlot(wallSlot) {
+    if (!selectedReserveWallKey) {
+      if (!hoveredWallSlotKey && !hoverWall.visible) {
+        return;
+      }
+
+      hoveredWallSlotKey = "";
+      hoverWall.visible = false;
+      notifyWallHover(null);
+      return;
+    }
+
     const previewWallLength = getReserveWallLengthFromKey(
       selectedReserveWallKey,
     );

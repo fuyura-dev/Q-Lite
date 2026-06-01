@@ -17,6 +17,180 @@ import {
 } from "./geometry";
 import { getReserveWallLengthFromKey } from "./reserveWalls";
 
+const WALL_TEXTURE_WORLD_SCALE = 1.72;
+const WALL_EDGE_ROUGHNESS = 0.048;
+const WALL_CHIP_DEPTH = 0.07;
+const WALL_SIDE_ROUGHNESS = 0.034;
+
+const wallTextureLoader = new THREE.TextureLoader();
+const wallMaterials = new Map();
+
+function loadWallTexture(path) {
+  const texture = wallTextureLoader.load(path);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+const WALL_TEXTURES = {
+  colorMap: loadWallTexture("/textures/board/Bricks076C_4K_Color.jpg"),
+  normalMap: loadWallTexture("/textures/board/Bricks076C_4K_NormalGL.jpg"),
+  roughnessMap: loadWallTexture("/textures/board/Bricks076C_4K_Roughness.jpg"),
+};
+WALL_TEXTURES.colorMap.colorSpace = THREE.SRGBColorSpace;
+
+function seededNoise(a, b, salt) {
+  const value = Math.sin(a * 127.1 + b * 311.7 + salt * 74.7) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function hashText(value) {
+  return [...String(value)].reduce(
+    (hash, char) => (hash * 31 + char.charCodeAt(0)) % 9973,
+    7,
+  );
+}
+
+function createWallMaterial(isSelected = false) {
+  const key = isSelected ? "selected" : "default";
+
+  if (!wallMaterials.has(key)) {
+    const sideMaterial = new THREE.MeshStandardMaterial({
+      color: isSelected ? "#b87438" : "#9d8060",
+      map: WALL_TEXTURES.colorMap,
+      normalMap: WALL_TEXTURES.normalMap,
+      normalScale: new THREE.Vector2(0.42, 0.42),
+      roughness: isSelected ? 0.58 : 0.92,
+      roughnessMap: WALL_TEXTURES.roughnessMap,
+      metalness: 0.02,
+      transparent: isSelected,
+      opacity: isSelected ? 0.94 : 1,
+      emissive: isSelected ? "#5a2a00" : "#000000",
+      emissiveIntensity: isSelected ? 0.22 : 0,
+    });
+    const topMaterial = sideMaterial.clone();
+    topMaterial.color.set(isSelected ? "#d79a52" : "#d0b894");
+
+    wallMaterials.set(key, [
+      sideMaterial,
+      sideMaterial,
+      topMaterial,
+      sideMaterial,
+      sideMaterial,
+      sideMaterial,
+    ]);
+  }
+
+  return wallMaterials.get(key);
+}
+
+function applyWallUvs(geometry, width, height, depth, seed) {
+  const position = geometry.getAttribute("position");
+  const normal = geometry.getAttribute("normal");
+  const uv = geometry.getAttribute("uv");
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+  const halfDepth = depth / 2;
+  const offsetU = seededNoise(seed, 3, 5) * 2;
+  const offsetV = seededNoise(seed, 7, 9) * 2;
+
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+    const normalX = Math.abs(normal.getX(i));
+    const normalY = Math.abs(normal.getY(i));
+    const normalZ = Math.abs(normal.getZ(i));
+
+    if (normalY > normalX && normalY > normalZ) {
+      uv.setXY(
+        i,
+        (x + halfWidth) / WALL_TEXTURE_WORLD_SCALE + offsetU,
+        (z + halfDepth) / WALL_TEXTURE_WORLD_SCALE + offsetV,
+      );
+    } else if (normalX > normalZ) {
+      uv.setXY(
+        i,
+        (z + halfDepth) / WALL_TEXTURE_WORLD_SCALE + offsetU,
+        (y + halfHeight) / WALL_TEXTURE_WORLD_SCALE + offsetV,
+      );
+    } else {
+      uv.setXY(
+        i,
+        (x + halfWidth) / WALL_TEXTURE_WORLD_SCALE + offsetU,
+        (y + halfHeight) / WALL_TEXTURE_WORLD_SCALE + offsetV,
+      );
+    }
+  }
+
+  uv.needsUpdate = true;
+}
+
+function roughenWallGeometry(geometry, width, height, depth, seed) {
+  const position = geometry.getAttribute("position");
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+  const halfDepth = depth / 2;
+  const edgeEpsilon = 0.001;
+
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+    const isXEdge = Math.abs(Math.abs(x) - halfWidth) < edgeEpsilon;
+    const isZEdge = Math.abs(Math.abs(z) - halfDepth) < edgeEpsilon;
+    const isTop = Math.abs(y - halfHeight) < edgeEpsilon;
+    const along = Math.round((x + halfWidth) * 13 + (z + halfDepth) * 17);
+    const chipNoise = seededNoise(seed, along, 14);
+    const roughNoise = seededNoise(seed, along, 21) - 0.5;
+    const edgeNoise = seededNoise(seed, along, 28) - 0.5;
+    const hardChip =
+      chipNoise > 0.78 ? (chipNoise - 0.78) * WALL_CHIP_DEPTH : 0;
+    const edgeOffset = edgeNoise * WALL_EDGE_ROUGHNESS - hardChip;
+    const sideNoise =
+      seededNoise(
+        seed,
+        Math.round((x + halfWidth) * 19 + (z + halfDepth) * 23),
+        Math.round((y + halfHeight) * 29),
+      ) - 0.5;
+    const sideOffset = sideNoise * WALL_SIDE_ROUGHNESS;
+
+    if (isXEdge) {
+      position.setX(i, x + Math.sign(x) * (edgeOffset + sideOffset));
+    }
+
+    if (isZEdge) {
+      position.setZ(i, z + Math.sign(z) * (edgeOffset + sideOffset));
+    }
+
+    if (isTop) {
+      const topRoughness = roughNoise * 0.026 - hardChip * 0.35;
+      position.setY(i, y + topRoughness);
+    }
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+function createWallGeometry(width, height, depth, seed) {
+  const widthSegments = Math.max(1, Math.ceil(width / 0.18));
+  const heightSegments = 5;
+  const depthSegments = Math.max(1, Math.ceil(depth / 0.18));
+  const geometry = new THREE.BoxGeometry(
+    width,
+    height,
+    depth,
+    widthSegments,
+    heightSegments,
+    depthSegments,
+  );
+
+  roughenWallGeometry(geometry, width, height, depth, seed);
+  applyWallUvs(geometry, width, height, depth, seed);
+  return geometry;
+}
+
 export function clearGroup(group) {
   group.clear();
 }
@@ -24,17 +198,16 @@ export function clearGroup(group) {
 export function createPlacedWallMesh(axis, wall) {
   const isHorizontal = axis == "horizontal";
   const wallSpan = getWallSpan(wall.length ?? 2);
+  const width = isHorizontal ? wallSpan : WALL_THICKNESS;
+  const depth = isHorizontal ? WALL_THICKNESS : wallSpan;
+  const seed = wall.pos.row * 17 + wall.pos.col * 31 + (isHorizontal ? 5 : 11);
   const center = getWallPreviewCenter(
     { axis, row: wall.pos.row, col: wall.pos.col },
     wall.length ?? 2,
   );
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      isHorizontal ? wallSpan : WALL_THICKNESS,
-      WALL_HEIGHT,
-      isHorizontal ? WALL_THICKNESS : wallSpan,
-    ),
-    BOARD_MATERIALS.wall,
+    createWallGeometry(width, WALL_HEIGHT, depth, seed),
+    createWallMaterial(),
   );
 
   mesh.castShadow = true;
@@ -46,17 +219,15 @@ export function createPlacedWallMesh(axis, wall) {
 
 export function createReserveWallMesh(reserveWallKey, isSelected = false) {
   const wallLength = getReserveWallLengthFromKey(reserveWallKey);
+  const seed = hashText(reserveWallKey);
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, getWallSpan(wallLength)),
-    new THREE.MeshStandardMaterial({
-      color: isSelected ? "#c8721a" : "#6b3c1a",
-      roughness: isSelected ? 0.5 : 0.72,
-      metalness: 0.06,
-      transparent: isSelected,
-      opacity: isSelected ? 0.92 : 1,
-      emissive: isSelected ? "#5a2a00" : "#000000",
-      emissiveIntensity: isSelected ? 0.3 : 0,
-    }),
+    createWallGeometry(
+      WALL_THICKNESS,
+      WALL_HEIGHT,
+      getWallSpan(wallLength),
+      seed,
+    ),
+    createWallMaterial(isSelected),
   );
 
   mesh.castShadow = true;
