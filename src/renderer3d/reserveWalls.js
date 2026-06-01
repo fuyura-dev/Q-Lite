@@ -24,6 +24,61 @@ export function getReserveWallLengthFromKey(reserveWallKey) {
   return match ? Number(match[1]) : 2;
 }
 
+function getReserveWallPlayerFromKey(reserveWallKey) {
+  const match = /^player-(\d+)-wall-/.exec(reserveWallKey ?? "");
+  return match ? Number(match[1]) : null;
+}
+
+function padReserveWallSlots(slots, totalSlots) {
+  const paddedSlots = slots.slice(0, totalSlots);
+
+  while (paddedSlots.length < totalSlots) {
+    paddedSlots.push(null);
+  }
+
+  return paddedSlots;
+}
+
+function getWallCountInSlots(slots, length) {
+  return slots.filter(
+    (reserveWallKey) =>
+      reserveWallKey && getReserveWallLengthFromKey(reserveWallKey) == length,
+  ).length;
+}
+
+function findPendingWallSlot(slots, playerId, length, pendingReserveWallKey) {
+  if (
+    !pendingReserveWallKey ||
+    getReserveWallPlayerFromKey(pendingReserveWallKey) != playerId ||
+    getReserveWallLengthFromKey(pendingReserveWallKey) != length
+  ) {
+    return -1;
+  }
+
+  return slots.indexOf(pendingReserveWallKey);
+}
+
+function findLastWallSlot(slots, length) {
+  return slots.findLastIndex(
+    (reserveWallKey) =>
+      reserveWallKey && getReserveWallLengthFromKey(reserveWallKey) == length,
+  );
+}
+
+function createNextUnusedReserveWallKey(slots, playerId, length) {
+  const usedKeys = new Set(slots.filter(Boolean));
+
+  for (let index = 0; index <= slots.length; index++) {
+    const reserveWallKey = createReserveWallKey(playerId, length, index);
+
+    if (!usedKeys.has(reserveWallKey)) {
+      return reserveWallKey;
+    }
+  }
+
+  return null;
+}
+
 export function createReserveWallStore() {
   const reserveWallSlotsByPlayer = new Map();
   let pendingPlacedReserveWallKey = "";
@@ -35,21 +90,67 @@ export function createReserveWallStore() {
     const totalSlots = getReserveWallSlots().length;
 
     for (const player of snapshot.players) {
-      const nextKeys = createReserveWallKeys(player.id, player.wallsRemaining);
-      const slots = nextKeys.slice(0, totalSlots);
+      const wallCounts = player.wallsRemaining ?? [];
+      let slots = reserveWallSlotsByPlayer.get(player.id);
 
-      while (slots.length < totalSlots) {
-        slots.push(null);
-      }
+      slots = slots
+        ? padReserveWallSlots(slots, totalSlots)
+        : padReserveWallSlots(
+            createReserveWallKeys(player.id, wallCounts),
+            totalSlots,
+          );
 
-      if (
-        pendingPlacedReserveWallKey &&
-        !nextKeys.includes(pendingPlacedReserveWallKey)
-      ) {
-        pendingPlacedReserveWallKey = "";
+      for (let length = 1; length <= wallCounts.length; length++) {
+        const desiredCount = wallCounts[length - 1];
+        let currentCount = getWallCountInSlots(slots, length);
+
+        while (currentCount > desiredCount) {
+          const pendingSlot = findPendingWallSlot(
+            slots,
+            player.id,
+            length,
+            pendingPlacedReserveWallKey,
+          );
+          const slotToClear =
+            pendingSlot >= 0 ? pendingSlot : findLastWallSlot(slots, length);
+
+          if (slotToClear < 0) {
+            break;
+          }
+
+          slots[slotToClear] = null;
+          currentCount--;
+        }
+
+        while (currentCount < desiredCount) {
+          const emptySlot = slots.findIndex(
+            (reserveWallKey) => !reserveWallKey,
+          );
+          const nextKey = createNextUnusedReserveWallKey(
+            slots,
+            player.id,
+            length,
+          );
+
+          if (emptySlot < 0 || !nextKey) {
+            break;
+          }
+
+          slots[emptySlot] = nextKey;
+          currentCount++;
+        }
       }
 
       reserveWallSlotsByPlayer.set(player.id, slots);
+    }
+
+    if (
+      pendingPlacedReserveWallKey &&
+      ![...reserveWallSlotsByPlayer.values()]
+        .flat()
+        .includes(pendingPlacedReserveWallKey)
+    ) {
+      pendingPlacedReserveWallKey = "";
     }
 
     for (const playerId of [...reserveWallSlotsByPlayer.keys()]) {
