@@ -9,6 +9,7 @@ import {
 } from "./renderer3d/geometry";
 import { createSceneBundle } from "./renderer3d/scene";
 import { createFloatingIsland } from "./renderer3d/island";
+import { createBoardEnvironment } from "./renderer3d/environment";
 import {
   clearGroup,
   createPlacedWallMesh,
@@ -81,6 +82,7 @@ export function createRenderer3D(container, options = {}) {
   if (!DEV_PAWN_VIEWER) {
     worldGroup.add(createFloatingIsland());
     worldGroup.add(boardGroup);
+    worldGroup.add(createBoardEnvironment());
   }
   const placedWallGroup = new THREE.Group();
   worldGroup.add(placedWallGroup);
