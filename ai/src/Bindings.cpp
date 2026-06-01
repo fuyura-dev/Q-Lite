@@ -31,7 +31,9 @@ EMSCRIPTEN_BINDINGS(engine) {
         .function("doBestMove", &Engine::DoBestMove)
         .function("reset", &Engine::Reset)
         .function("evaluate", &Engine::Evaluate)
-        .function("startMatch", &Engine::StartMatch);
+        .function("startMatch", &Engine::StartMatch)
+        .function("restartMatch", &Engine::RestartMatch)
+        .function("setPlayerClass", &Engine::SetPlayerClass);
 
     constant("BUILD_TIME", std::string(__DATE__ " " __TIME__));
 
@@ -58,9 +60,9 @@ EMSCRIPTEN_BINDINGS(engine) {
         .value("VALID", kValid)
         .value("WIN", kWin);
 
-    enum_<Class>("class", enum_value_type::number)
-        .value("RANDOM", Class::kRandom)
-        .value("GHOST", Class::kGhost)
-        .value("BUILDER", Class::kBuilder)
-        .value("RUNNER", Class::kRunner);
+    enum_<Class>("pawnClasses", enum_value_type::number)
+        .value("random", Class::kRandom)
+        .value("ghost", Class::kGhost)
+        .value("builder", Class::kBuilder)
+        .value("runner", Class::kRunner);
 }

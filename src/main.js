@@ -66,6 +66,8 @@ let latestSnapshot = null;
 let gameStarted = false;
 
 let buildTime = "";
+let pawnClasses = {};
+let pawnClassesFromString = {};
 
 const AI_MOVE_DELAY_MS = 300;
 
@@ -638,11 +640,10 @@ function clearSelections() {
   renderer.clearWallPlacementSelection();
 }
 
-async function resetCurrentGame(actionLabel) {
+async function resetCurrentGame(actionLabel, isRestart = false) {
   cancelAiLoop();
-  if (engine) {
-    await engine.reset();
-    await engine.startMatch(); // TODO: temporary
+  if (engine && isRestart) {
+    await engine.restartMatch();
   }
   actionStatusLabel = actionLabel;
   clearSelections();
@@ -653,7 +654,14 @@ async function startGame() {
   if (!engine) {
     return;
   }
-
+  await engine.reset();
+  await engine.setPlayerClass(1, pawnClasses[selectedPlayerClasses[1]]);
+  if (!isHumanVsAiMode()) {
+    await engine.setPlayerClass(2, pawnClasses[selectedPlayerClasses[2]]);
+  }
+  const classes = await engine.startMatch();
+  selectedPlayerClasses[1] = pawnClassesFromString[classes[0]];
+  selectedPlayerClasses[2] = pawnClassesFromString[classes[1]];
   hideClassPreview();
   gameStarted = true;
   gameStage?.classList.add("is-playing");
@@ -713,8 +721,11 @@ async function initializeEngine() {
     });
     console.log(wasmModule);
     engine = createEngineProxy(wasmModule);
-    await engine.startMatch(); // TODO : temporary
     buildTime = wasmModule.BUILD_TIME;
+    pawnClasses = wasmModule.pawnClasses;
+    pawnClassesFromString = Object.fromEntries(
+      Object.entries(pawnClasses).map(([key, value]) => [value, key]),
+    );
     engineStatus = "Engine Ready";
   } catch (error) {
     engineStatus = "Engine not loaded";
@@ -802,12 +813,12 @@ aiStepButton?.addEventListener("click", async () => {
 });
 
 restartButton?.addEventListener("click", async () => {
-  await resetCurrentGame("Action: game restarted");
+  await resetCurrentGame("Action: game restarted", true);
   await maybeRunAiTurn();
 });
 
 winnerRestartButton?.addEventListener("click", async () => {
-  await resetCurrentGame("Action: game restarted");
+  await resetCurrentGame("Action: game restarted", true);
   await maybeRunAiTurn();
 });
 

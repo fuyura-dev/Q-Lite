@@ -2,8 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstdlib>
-#include <ctime>
 #include <ranges>
 
 #include "MoveGen.h"
@@ -11,7 +9,7 @@
 
 static Color ToColor(int player) { return player <= 1 ? kWhite : kBlack; }
 
-Engine::Engine() { std::srand(std::time({})); }
+Engine::Engine() {}
 
 int Engine::GetCurrentTurn() const {
     return static_cast<int>(pos.GetCurrentTurn()) + 1;
@@ -56,9 +54,10 @@ constexpr std::array kClassChoose = {Class::kGhost, Class::kBuilder,
 constexpr auto kExtraWalls = 2;
 
 std::vector<Class> Engine::StartMatch() {
+    std::uniform_int_distribution<int> dist(0, kClassChoose.size() - 1);
     for (Color color : {kWhite, kBlack}) {
         if (classes[color] == Class::kRandom) {
-            classes[color] = kClassChoose[std::rand() % kClassChoose.size()];
+            classes[color] = kClassChoose[dist(rd)];
         }
         SpecialState special;
         switch (classes[color]) {
@@ -80,7 +79,10 @@ std::vector<Class> Engine::StartMatch() {
     return classes;
 }
 
-void Engine::RestartMatch() { pos = Position(); }
+void Engine::RestartMatch() {
+    pos = Position();
+    StartMatch();
+}
 
 void Engine::Reset() {
     pos = Position();

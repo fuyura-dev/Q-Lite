@@ -29,6 +29,7 @@ onmessage = ({data}) => {
 postMessage({
     wallSide: wasmModule.wallSide,
     moveResult: wasmModule.moveResult,
+    pawnClasses: wasmModule.pawnClasses,
     BUILD_TIME: wasmModule.BUILD_TIME
 })
 

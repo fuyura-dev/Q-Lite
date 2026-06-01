@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include <vector>
 
 #include "Position.h"
@@ -32,6 +33,7 @@ class Engine {
     MoveResult DoBestMove();  // ai turn for current player
 
    private:
+    std::random_device rd;
     Position pos;
     std::vector<Class> classes = {Class::kRandom, Class::kRandom};
 };
