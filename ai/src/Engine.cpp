@@ -74,6 +74,7 @@ std::vector<Class> Engine::StartMatch() {
             case Class::kRunner:
                 special.can_move_two_tiles = true;
                 special.move_two_tiles_available = true;
+                pos.ReduceWalls(color);
                 break;
             default:
                 break;

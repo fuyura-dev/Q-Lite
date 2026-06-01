@@ -216,6 +216,11 @@ const SpecialState& Position::GetSpecialState(Color player) const {
     return special_states[player];
 }
 
+void Position::ReduceWalls(Color player) {
+    remaining_walls[player][kTwo]--;
+    remaining_walls[player][kThree]--;
+}
+
 consteval auto Transpose(auto Checks) {
     for (auto& [_, vector] : Checks) {
         std::swap(vector.row, vector.col);

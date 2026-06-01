@@ -46,6 +46,8 @@ class Position {
     SpecialState& GetSpecialState(Color player);
     const SpecialState& GetSpecialState(Color player) const;
 
+    void ReduceWalls(Color player);
+
    private:
     bool HasIntersectingWall(GridPosition pos, WallSide side,
                              WallLength length) const;
