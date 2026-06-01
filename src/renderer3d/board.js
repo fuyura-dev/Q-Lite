@@ -11,6 +11,7 @@ import {
   MAX_RESERVE_WALL_SPAN,
 } from "./constants";
 import { getCellCenter, getLaneCenter } from "./geometry";
+import { createGrassLaneUnderlay } from "./grassLanes";
 
 const BOARD_TEXTURE_REPEAT = 1.3;
 const TOP_PANEL_TEXTURE_REPEAT = 0.9;
@@ -400,6 +401,7 @@ export function createBoardGroup() {
   topPanel.receiveShadow = true;
   topPanel.position.y = -0.02;
   boardGroup.add(topPanel);
+  boardGroup.add(createGrassLaneUnderlay());
 
   // CELL
   for (let r = 0; r < BOARD_SIZE; r++) {
