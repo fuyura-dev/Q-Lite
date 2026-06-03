@@ -15,6 +15,9 @@ import {
 const gameStage = document.querySelector(".game-stage");
 const mainMenu = document.getElementById("main-menu");
 const startGameButton = document.getElementById("start-game-button");
+const creditsButton = document.getElementById("credits-button");
+const creditsOverlay = document.getElementById("credits-overlay");
+const creditsCloseButton = document.getElementById("credits-close-button");
 const mainMenuButton = document.getElementById("main-menu-button");
 const menuModeButtons = [...document.querySelectorAll("[data-menu-mode]")];
 const classChoiceButtons = [
@@ -80,6 +83,7 @@ let latestSnapshot = null;
 let gameStarted = false;
 let announcedWinner = null;
 let gameInfoCollapsed = false;
+let creditsReturnFocus = null;
 const wallOwners = new Map();
 
 let buildTime = "";
@@ -285,6 +289,26 @@ function showClassPreview(button) {
 function hideClassPreview() {
   classPreviewPanel?.classList.remove("is-visible");
   classPreview?.hide();
+}
+
+function showCreditsModal() {
+  if (!creditsOverlay) {
+    return;
+  }
+
+  creditsReturnFocus = document.activeElement;
+  creditsOverlay.hidden = false;
+  creditsCloseButton?.focus();
+}
+
+function hideCreditsModal() {
+  if (!creditsOverlay || creditsOverlay.hidden) {
+    return;
+  }
+
+  creditsOverlay.hidden = true;
+  creditsReturnFocus?.focus?.();
+  creditsReturnFocus = null;
 }
 
 function updateWinnerOverlay(snapshot) {
@@ -906,6 +930,28 @@ startGameButton?.addEventListener("click", () => {
 
   playStartGameSound();
   startGame();
+});
+
+creditsButton?.addEventListener("click", () => {
+  playGameButtonSound();
+  showCreditsModal();
+});
+
+creditsCloseButton?.addEventListener("click", () => {
+  playGameButtonSound();
+  hideCreditsModal();
+});
+
+creditsOverlay?.addEventListener("click", (event) => {
+  if (event.target === creditsOverlay) {
+    hideCreditsModal();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    hideCreditsModal();
+  }
 });
 
 mainMenuButton?.addEventListener("click", () => {

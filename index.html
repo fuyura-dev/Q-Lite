@@ -145,8 +145,11 @@
             </div>
 
             <div class="main-menu__actions">
-              <button id="start-game-button" class="start-button">
+              <button id="start-game-button" class="start-button" type="button">
                 Start Game
+              </button>
+              <button id="credits-button" class="credits-button" type="button">
+                Credits
               </button>
             </div>
           </div>
@@ -262,6 +265,29 @@
         <div class="winner-dialog__actions">
           <button id="winner-restart-button">Restart</button>
           <button id="winner-main-menu-button">Main Menu</button>
+        </div>
+      </div>
+      <div id="credits-overlay" class="credits-overlay" role="dialog" hidden>
+        <div class="credits-dialog">
+          <p class="credits-dialog__eyebrow">Academic Project</p>
+          <h2 id="credits-title" class="credits-dialog__title">
+            Credits & Disclaimer
+          </h2>
+          <p class="credits-dialog__meta">Group 3 - BSCS 3-3 - 2026</p>
+          <p>
+            This game was developed as a project requirement for the
+            Introduction to Artificial Intelligence course under the Bachelor of
+            Science in Computer Science program.
+          </p>
+          <p>
+            The project is presented under the College of Computer and
+            Information Sciences (CCIS), Polytechnic University of the
+            Philippines (PUP) - Sta. Mesa, Manila, and was created solely for
+            academic, educational, and demonstration purposes.
+          </p>
+          <div class="credits-dialog__actions">
+            <button id="credits-close-button" type="button">Close</button>
+          </div>
         </div>
       </div>
     </main>

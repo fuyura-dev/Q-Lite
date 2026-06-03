@@ -257,12 +257,31 @@ select {
 
 .main-menu__actions {
   margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 .start-button {
   min-width: 180px;
   min-height: 52px;
   font-size: 1rem;
+}
+
+.credits-button {
+  min-width: 104px;
+  min-height: 42px;
+  background: rgba(12, 7, 4, 0.72);
+  border-color: rgba(240, 208, 144, 0.3);
+  color: #f0d090;
+  text-shadow: none;
+}
+
+.credits-button:hover {
+  background: rgba(13, 39, 35, 0.84);
+  border-color: rgba(111, 198, 184, 0.64);
+  color: var(--text);
 }
 
 .game-ui {
@@ -348,6 +367,78 @@ select {
 .winner-dialog__actions button {
   flex: 0 0 auto;
   min-height: 38px;
+}
+
+.credits-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: auto;
+  background: rgba(5, 3, 2, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.credits-overlay[hidden] {
+  display: none;
+}
+
+.credits-dialog {
+  width: min(100%, 560px);
+  padding: 26px;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(48, 28, 10, 0.94), rgba(20, 11, 4, 0.96)),
+    var(--parchment);
+  border: 1px solid rgba(240, 208, 144, 0.34);
+  border-top: 2px solid rgba(240, 208, 144, 0.52);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.64),
+    inset 0 1px 0 rgba(255, 228, 150, 0.18);
+}
+
+.credits-dialog__eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.credits-dialog__title {
+  margin: 0;
+  color: #f0d090;
+  font-size: 2.35rem;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(180, 100, 0, 0.45);
+}
+
+.credits-dialog .credits-dialog__meta {
+  color: var(--blue);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.credits-dialog p {
+  margin: 14px 0 0;
+  color: rgba(240, 226, 196, 0.8);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.credits-dialog__actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.credits-dialog__actions button {
+  min-width: 96px;
 }
 
 .game-hud {
@@ -655,6 +746,14 @@ button[hidden] {
     justify-self: stretch;
     align-self: end;
     width: 100%;
+  }
+
+  .credits-dialog {
+    padding: 22px;
+  }
+
+  .credits-dialog__title {
+    font-size: 2rem;
   }
 }
 
